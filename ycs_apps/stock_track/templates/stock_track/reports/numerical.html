@@ -1,0 +1,114 @@
+{% extends "fardex/base.html" %}
+
+{% block content %}
+
+
+
+
+{% load static %}
+{% load staticfiles %}
+{% load verbose_names %}
+{% load reports %}
+
+
+{% csrf_token %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'fardex/style.css' %}" />
+
+{% if rma_list %}
+ 
+	
+  
+	
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+    
+        var colorScheme =[{% get_color_scheme_json %} ]; //make color scheme for pie chart pull from built list
+        function findColor(data){  
+            //for (item in data){
+            //    console.log(data.getNumberOfRows());
+            //}
+            var list =[];
+            
+            for(i = 0;i<data.getNumberOfRows();i++){
+                for(j = 0;j<colorScheme.length;j++){
+                    if(colorScheme[j].type == data.getValue(i,0)){
+                        console.log(data.getValue(i,0) + colorScheme[j].type );
+                        list.push({color: colorScheme[j].color});
+                    }else{
+                        console.log(data.getValue(i,0) + colorScheme[j].type );
+                    }
+                }
+            }
+            console.log(list);
+            //return [ this, arg1, arg2 ];  //
+            return list;
+        }  
+      
+      
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart2);
+      function drawChart2() {
+        var data = google.visualization.arrayToDataTable([
+			
+          ['Status', 'Days']
+          {% build_report_data_status_numerical rma_list %}
+			
+	
+			
+        ]);
+
+        var options = {
+          title: 'Status PieChart - Numerical (LRU)',
+          chartArea:{left:60,top:40,bottom:0,width:'80%',height:'85%'},
+          slices: findColor(data),
+          pieSliceTextStyle: {color:"#111"}
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('piechart_nummerical'));
+        chart.draw(data, options);
+      }
+    </script> 
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    <div id="piechart_nummerical" style="width: 800px; height: 400px;">
+        
+    </div>
+    <div class="grid_8 prefix_1">
+        <p style="text-align: left" >
+            Shows how many RMAs are currently open of each Status  <BR>
+            "Completed" only shows RMA's whose status has become "Completed" in the past 7 days. <BR>
+        </p>
+    </div>
+    <hr style="background:#0080CC; border:0; height:7px" />
+    <div class="grid_8 prefix_1">
+        <p style="text-align: left" >
+            The current number of RMA's with Status "Awaiting Approval" is: <strong style="font-size: 24px;" id="report_AA_numerical">{% build_report_data_status_numerical rma_list "Awaiting Approval" %}</strong><BR>
+            The average time spent on status "Awaiting Approval" is: <strong style="font-size: 24px;" id="report_AA_time">{% get_status_avg_time rma_list "AA" %}</strong> days.<BR>
+        </p>
+    </div>
+    <hr style="background:#0080CC; border:0; height:7px" />
+    
+    
+    
+        
+    
+    
+			
+{% else %}
+    <p>No RMAs are available.</p>
+{% endif %}
+
+
+
+
+{%endblock%}

@@ -1,0 +1,145 @@
+{% extends "stock_track/base.html" %}
+
+{% block content %}
+
+{% load static %}
+{% load staticfiles %}
+
+{% csrf_token %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'stock_track/style.css' %}" />
+<link rel="stylesheet" type="text/css" href="{% static 'stock_track/css/tablestyle.css' %}" />
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.0/css/jquery.dataTables.css">
+<!-- jQuery -->
+<script type="text/javascript" charset="utf8" src="//code.jquery.com/jquery-1.10.2.min.js"></script>
+<!-- DataTables -->
+<script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.0/js/jquery.dataTables.js"></script>
+
+<script>
+
+$(document).ready( function () {
+    var indexTable = $('#index_table').DataTable({
+        "order": [[ 8, "desc" ]],
+        "columnDefs": [
+            {
+                "targets": [2],  //[ 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26 ],
+                "visible": false
+            }
+        ]
+    } );
+    
+    var toggler = document.getElementById("table_toggle");
+    var tableLength = indexTable.row(0).data().length;
+    var nRow =  $('#myDataTable thead tr')[0];
+    //Step through table
+    for (var i = tableLength-1; i >= 0; i--) {
+        
+        var tdCell = document.createElement('div');
+        
+        tdCell.id = "toggle_item"
+        
+        tdCell.textContent += $(indexTable.column(i).header()).html();
+        tdCell.textContent += "  ";
+        tdCell.classList.add("toggle-vis");
+        tdCell.classList.add("unselectable");
+        tdCell.setAttribute("data-column",i);
+        tdCell.setAttribute("unselectable", "on");
+        
+        if (indexTable.column(i).visible()){
+            tdCell.classList.add("toggled_div");
+        }
+        
+        toggler.insertBefore(tdCell, toggler.firstChild);
+        
+    }
+    
+    var br = document.createElement('p');
+    br.textContent += "Toggle Columns:"
+    br.innerHTML +=  "&emsp; <a href=\"{% url 'index' %}\">|Reset|</a> "
+    br.setAttribute("style","text-align:left;font-weight:bold;")
+    toggler.insertBefore(br, toggler.firstChild);
+    
+    
+    
+    $('div.toggle-vis').on( 'click', function (e) {
+        e.preventDefault();
+ 
+        // Get the column API object ////
+        var column = indexTable.column( $(this).attr('data-column') );
+ 
+        // Toggle the visibility
+        column.visible( ! column.visible() );
+        
+        $(this).toggleClass('toggled_div');
+    } );
+    
+} );
+</script>
+
+
+{% if object_list %}
+
+    <div id="table_toggle"><br style="clear: both;" /></div>
+    <BR>
+    
+    <table id="index_table" border="1" width="100%" >
+        
+        <thead><tr id="header"><!-- Sets first row as header -->
+            <td>Company</td>
+            <td>Long Name</td>
+            <td>pk</td>
+            
+            <td>Average</td>
+            <td>StDev</td>
+            <td>Min</td>
+            <td>Max</td>
+            <td>Median</td>
+            
+            <td>Score</td>
+            
+        </thead></tr>
+        <tbody>
+    {% for item in object_list %}
+        <tr>
+            <td>
+                <a href="{% url 'detail' item.pk %}" id="detail_link_{{item.pk}}">
+                    {{ item.ticker }}
+                </a>
+            </td>
+            
+            <td>{{item.long_name}}</td>
+            
+            <td> {{item.pk}} </td>
+            
+            <td> {{item.price_average}} </td>
+            <td> {{item.price_stdev}} </td>
+            <td> {{item.price_min}} </td>
+            <td> {{item.price_max}} </td>
+            <td> {{item.price_median}} </td>
+            
+            
+            <td> {{item.score_undervalue}} </td>
+            
+        </tr>    
+    {%endfor%}    
+        
+        </tbody>
+        </tfoot>
+        <tr>
+            <td colspan="12"> <a href="{% url 'index' %}">Add New</a> </td>
+        </tr>
+        </tfoot>
+    </table>
+    
+    
+    
+{% else %}
+    <p>No Tickers are available.</p>
+{% endif %}
+
+
+
+{%endblock%}
+<!-- space changer for ftp upload ############# -->

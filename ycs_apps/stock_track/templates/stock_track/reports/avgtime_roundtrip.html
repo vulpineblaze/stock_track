@@ -1,0 +1,43 @@
+{% extends "fardex/base.html" %}
+
+{% block content %}
+
+
+
+
+{% load static %}
+{% load staticfiles %}
+{% load verbose_names %}
+{% load reports %}
+
+
+{% csrf_token %}
+
+<link rel="stylesheet" type="text/css" href="{% static 'fardex/style.css' %}" />
+
+{% if rma_list %}
+ 
+	
+  
+	
+        
+    
+    
+    <div class="grid_8 prefix_1">
+        <p style="text-align: left" >
+        {% build_report_table_shipped_and_reshipped rma_list %}    
+        </p>
+    </div>
+    <hr style="background:#0080CC; border:0; height:7px" />
+    
+    
+    
+			
+{% else %}
+    <p>No RMAs are available.</p>
+{% endif %}
+
+
+
+
+{%endblock%}

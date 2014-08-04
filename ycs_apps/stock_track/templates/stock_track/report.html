@@ -1,0 +1,25 @@
+{% extends "fardex/base.html" %}
+
+{% block content %}
+
+    <P>
+        To view How many RMA entries by Status:
+        <a href="{% url 'report_numerical' %}">Numerical</a>
+    </P>
+    
+    <P>
+        To view How long each RMA entries spent under each Status:
+        <a href="{% url 'report_avgtime' %}">Average Time by Status</a>
+    </P>
+    
+    <P>
+        To view How long RMA entries spent in the field:
+        <a href="{% url 'report_roundtrip' %}">Average Time Round Trip</a>
+    </P>
+
+    <P>
+        To view the most failed Part Numbers:
+        <a href="{% url 'report_failedpartnum' %}">Failed by Part Number</a>
+    </P>
+
+{%endblock%}

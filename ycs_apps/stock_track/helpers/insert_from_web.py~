@@ -1,0 +1,69 @@
+#!/usr/bin/python
+import ycs_apps.settings
+# art_apps.settings.configure()
+import os
+import sys
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ycs_apps.settings")
+    
+from django.db import models
+from django.contrib.auth.models import User
+
+from ycs_apps.fardex.models import *
+
+from ycs_apps.fardex import views
+from ycs_apps.fardex import forms
+from ycs_apps.fardex import tests
+
+from rebar.testing import flatten_to_dict
+
+import csv
+
+from django.utils import timezone
+from datetime import *
+
+from xml.dom import minidom
+import urllib
+
+
+
+
+
+
+
+
+    
+def main():
+    '''business logic for when running this module as the primary one!'''
+    display = Display(visible=0, size=(1024, 768))
+    display.start()
+
+    fresh_cl_post = find_cl_post()
+    prev_cl_post = {"title":"","link":""}
+    old_cl_post = {"title":"","link":""}
+    
+    # find_cl_post()
+    while True:
+        # print "TEST" + str(datetime.date.today())
+        fresh_cl_post = find_cl_post()
+        if fresh_cl_post['title'] != prev_cl_post['title']:
+            
+            old_cl_post = prev_cl_post
+            prev_cl_post = fresh_cl_post
+            
+            send_cl_email(fresh_cl_post)
+            
+        gc.collect()
+        time.sleep(SLEEP_SECONDS)
+        
+    
+    
+    display.stop()
+    
+    
+    
+    
+
+# Here's our payoff idiom!
+if __name__ == '__main__':
+    main()

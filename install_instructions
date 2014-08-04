@@ -1,0 +1,16 @@
+
+#assumes python 2.7.6
+
+sudo apt-get install python python-pip python-dev build-essential
+sudo pip install --upgrade pip 
+sudo pip install --upgrade virtualenv 
+
+virtualenv django-env
+source django-env/bin/activate
+
+pip install -r requirements.txt
+
+sudo apt-get install mysql-server php5-mysql  libmysqlclient-dev
+sudo apt-get install python-mysqldb
+
+export PATH=$PATH:/usr/local/mysql/bin

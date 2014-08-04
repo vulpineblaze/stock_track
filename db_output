@@ -1,0 +1,42 @@
+BEGIN;
+CREATE TABLE `stock_track_company` (
+    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    `ticker` varchar(20) NOT NULL,
+    `long_name` varchar(200) NOT NULL,
+    `modified` datetime NOT NULL,
+    `activated` bool NOT NULL,
+    `has_averages` bool NOT NULL,
+    `price_average` double precision NOT NULL,
+    `price_stdev` double precision NOT NULL,
+    `price_min` double precision NOT NULL,
+    `price_max` double precision NOT NULL,
+    `price_median` double precision NOT NULL,
+    `score_undervalue` double precision NOT NULL
+)
+;
+CREATE TABLE `stock_track_daily` (
+    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    `cid_id` integer NOT NULL,
+    `date` date NOT NULL,
+    `price_open` double precision NOT NULL,
+    `price_high` double precision NOT NULL,
+    `price_low` double precision NOT NULL,
+    `price_close` double precision NOT NULL,
+    `price_volume` double precision NOT NULL,
+    `price_adj_close` double precision NOT NULL
+)
+;
+ALTER TABLE `stock_track_daily` ADD CONSTRAINT `cid_id_refs_id_1c9010e4` FOREIGN KEY (`cid_id`) REFERENCES `stock_track_company` (`id`);
+CREATE TABLE `stock_track_userprofile` (
+    `id` integer AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    `user_id` integer NOT NULL UNIQUE,
+    `website` varchar(200) NOT NULL,
+    `picture` varchar(100) NOT NULL
+)
+;
+ALTER TABLE `stock_track_userprofile` ADD CONSTRAINT `user_id_refs_id_11d1bf77` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`);
+CREATE INDEX `stock_track_company_0ea5b775` ON `stock_track_company` (`ticker`);
+CREATE INDEX `stock_track_daily_fdd506be` ON `stock_track_daily` (`cid_id`);
+CREATE INDEX `stock_track_daily_eeede814` ON `stock_track_daily` (`date`);
+
+COMMIT;
