@@ -42,7 +42,7 @@ import threading
 
 
 
-HOW_MANY_COMPANIES = 250 # Zero means infinite
+HOW_MANY_COMPANIES = 500 # Zero means infinite
 MAX_THREADS = 10
 
 CPI_DICT = {}
@@ -141,39 +141,39 @@ def analyse_and_put_in_db(company):
     
     if company.modified:
         if company.modified.date() == datetime.now(pytz.utc).date():
-            #~ print "This record was edited today!"
-            #~ return []
-            pass
+            # print "This record was edited today!"
+            return []
+            # pass
 
-    else:        
-        for daily in company.daily_set.filter().order_by('-date'):
-            #~ print daily.date
-            price_list.append(calc_inflation_by_year(
-                            daily.date.year,
-                            daily.price_close
-                            ))
+    # else:        
+    for daily in company.daily_set.filter().order_by('-date'):
+        #~ print daily.date
+        price_list.append(calc_inflation_by_year(
+                        daily.date.year,
+                        daily.price_close
+                        ))
 
-        #~ price_array = array( price_list )
+    #~ price_array = array( price_list )
+    
+
+    if len(price_list) > 100:    
+        company.price_average = np.average(price_list)    
+        company.price_stdev = np.std(price_list) 
+        company.price_min = np.amin(price_list) 
+        company.price_max = np.amax(price_list) 
+        company.price_median = np.median(price_list)
+        company.score_undervalue = calc_score_undervalue(price_list)
+        company.has_averages = True 
+        company.modified = timezone.now()
         
-
-        if len(price_list) > 100:    
-            company.price_average = np.average(price_list)    
-            company.price_stdev = np.std(price_list) 
-            company.price_min = np.amin(price_list) 
-            company.price_max = np.amax(price_list) 
-            company.price_median = np.median(price_list)
-            company.score_undervalue = calc_score_undervalue(price_list)
-            company.has_averages = True 
-            company.modified = timezone.now()
-            
-            company.save()
-             
-            connection.close()    
-        else:
-            company.has_averages = False 
-            company.modified = (datetime.now(pytz.utc) - timedelta(days=5))
-            company.save()
-            connection.close()   
+        company.save()
+         
+        connection.close()    
+    else:
+        company.has_averages = False 
+        company.modified = (datetime.now(pytz.utc) - timedelta(days=5))
+        company.save()
+        connection.close()   
         
             
         

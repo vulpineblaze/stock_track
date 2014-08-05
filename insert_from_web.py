@@ -2,7 +2,7 @@
 import ycs_apps.settings
 # art_apps.settings.configure()
 import os
-import sys
+import sys , getopt
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ycs_apps.settings")
     
@@ -294,15 +294,52 @@ def build_ticker_data_from_web( company):
     
     return f
 
+
+def parse_commnad_line_args(the_args):
+    """ """
+
+    # HOW_MANY_COMPANIES = 0 # Zero means infinite
+    # MAX_THREADS = 20
+    skip_company_inserts = False
+    help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES> [-f, skips company inserts]'
+
+    try:
+        opts, args = getopt.getopt(the_args,"hki:o:",["ifile=","ofile="])
+    except getopt.GetoptError:
+        print help_output_string;sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-f':
+            skip_company_inserts = True
+
+        if opt == '-h':
+            print help_output_string;sys.exit(2)
+        elif opt in ("-i", "--ifile"):
+            try:
+                MAX_THREADS = int(arg)
+            except:
+                print help_output_string;sys.exit(2)
+        elif opt in ("-o", "--ofile"):
+            try:
+                HOW_MANY_COMPANIES = int(arg)
+            except:
+                print help_output_string;sys.exit(2)
+
+    print 'MAX_THREADS is ', MAX_THREADS
+    print 'MAX_COMPANIES is ', HOW_MANY_COMPANIES
+
+    return skip_company_inserts
+
     
-def main():
+def main(the_args):
     """ business logic for when running this module as the primary one!"""
     start_time = datetime.now()
     temp_time = datetime.now()
     bug_in_threading_workaround_date = datetime.strptime("2014-07-30", '%Y-%m-%d')
     
+    skip_company_inserts = parse_commnad_line_args(the_args)
     
-    f = build_company_table_from_web()
+    if not skip_company_inserts:
+        f = build_company_table_from_web()
     #~ r = f
     #~ print r
     #~ 
@@ -335,4 +372,4 @@ def main():
 
 # Here's our payoff idiom!
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
