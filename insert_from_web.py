@@ -18,7 +18,9 @@ from ycs_apps.stock_track import forms
 from ycs_apps.stock_track import tests
 
 
-
+# from selenium import webdriver
+# from selenium.webdriver.common.keys import Keys
+# from pyvirtualdisplay import Display
 
 from django.utils import timezone
 from datetime import *
@@ -27,7 +29,7 @@ import _strptime
 import pytz
 
 from xml.dom import minidom
-import urllib
+import urllib, cookielib
 
 import csv
 import urllib2
@@ -60,6 +62,74 @@ def enumerate_joiner(main_thread):
             continue
         #~ logging.debug('joining %s', t.getName())
         t.join()
+
+
+def find_acceptable_ticker(ticker_string):
+    found_ticker = False
+    reject_string = "This is an unknown symbol."
+
+
+    # driver = webdriver.Firefox()
+    # driver.get("http://www.nasdaq.com/symbol/"+ticker_string)
+    # assert "Python" in driver.title
+    
+    # elem = driver.find_element_by_class_name("row")
+    # cl_id = elem.get_attribute('data-pid')
+    # elem = driver.find_elements_by_xpath("//p[contains(@class,'row')]/span")
+    
+    # elements = driver.find_elements_by_xpath("//span[@class='pl']/a")
+
+
+    site= "http://www.nasdaq.com/symbol/"+ticker_string
+    hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+           'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+           'Accept-Encoding': 'none',
+           'Accept-Language': 'en-US,en;q=0.8',
+           'Connection': 'keep-alive'}
+
+    req = urllib2.Request(site, headers=hdr)
+
+    try:
+        page = urllib2.urlopen(req)
+        content = page.read()
+    except urllib2.HTTPError, e:
+        print e.fp.read()
+        content = None
+
+
+    # print content
+
+
+    # body = driver.find_element_by_tag_name('body')
+    # print body.text
+    if content:
+        if reject_string in content:
+            found_ticker = False
+            # print "Rejected "+ticker_string
+        else:
+            found_ticker = True
+    #~ print (timezone.now()-start) , count;count+=1
+         # self.assertIn(item, body.text)
+    # title = elements.find_element_by_tag_name("a")
+    # title = elements[1].find_elements_by_xpath(".//a[@class='']")
+    # count = 0
+    # for child in elements:
+    #     cl_post['title'] = str(child.text)
+    #     cl_post['link'] = str(child.get_attribute("href"))
+    #     break
+        # print str(child.text)+" | "+str(child.get_attribute("href"))
+        # count += 1
+        # if count > 5:
+            # break
+        
+    # print str(title)
+    
+    # elem.send_keys("selenium")
+    # elem.send_keys(Keys.RETURN)
+    # driver.close()
+    
+    return found_ticker        
 
 def make_daily_from_row(row, company):
     """ """
@@ -218,9 +288,16 @@ def build_ticker_data_from_web( company):
     now_ish = datetime.today()
     future_year = now_ish.year+1
 
+    if not find_acceptable_ticker(company.ticker):
+        company.activated = False
+        company.save()
+        return ""
+
     existing_dailies = Daily.objects.filter(cid=company)
     
     if existing_dailies.count() > 500:
+        company.activated = False
+        company.save()
         return ""
     elif existing_dailies.count() > 1:
         past_year = now_ish.year-1
@@ -234,6 +311,7 @@ def build_ticker_data_from_web( company):
     the_url_string += str(company.ticker)+"&a=11&b=31&c="
     the_url_string += str(past_year)+"&d=00&e=1&f="
     the_url_string += str(future_year)+"&g=d&ignore=.csv"
+    
     
     #~ the_url_string ="http://real-chart.finance.yahoo.com/table.csv?s="
     #~ the_url_string += str(company.ticker)+"&d=6&e=25&f="
@@ -301,18 +379,17 @@ def parse_commnad_line_args(the_args):
     # HOW_MANY_COMPANIES = 0 # Zero means infinite
     # MAX_THREADS = 20
     skip_company_inserts = False
-    help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES> [-f, skips company inserts]'
+    help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES> [-k, skips company inserts]'
 
     try:
         opts, args = getopt.getopt(the_args,"hki:o:",["ifile=","ofile="])
     except getopt.GetoptError:
         print help_output_string;sys.exit(2)
     for opt, arg in opts:
-        if opt == '-f':
-            skip_company_inserts = True
-
         if opt == '-h':
             print help_output_string;sys.exit(2)
+        elif opt == '-k':
+            skip_company_inserts = True
         elif opt in ("-i", "--ifile"):
             try:
                 MAX_THREADS = int(arg)
@@ -351,6 +428,8 @@ def main(the_args):
     divisor = (len(obj_list)*1.0)
     
     print "Starting processing of "+str(divisor)+" companies."
+    # display = Display(visible=0, size=(1024, 768))
+    # display.start()
     
     for company in obj_list:
         #~ if company.id == 4:
@@ -360,11 +439,17 @@ def main(the_args):
         if (count > HOW_MANY_COMPANIES and HOW_MANY_COMPANIES > 0):
             break
             
-        if ((datetime.now() - temp_time).seconds) > 30 :
+        if ((datetime.now() - temp_time).seconds) > 90 :
             temp_time = datetime.now()
-            print "Accomplished "+str((1.0*count/divisor)*100)+"% in "+str(((datetime.now() - start_time).seconds))+" seconds."
+            time_diff = temp_time - start_time
+            out_string = "Accomplished "
+            out_string += str((1.0*count/divisor)*100)+"% in "
+            out_string += str((time_diff.seconds//60)%60)+" minutes, and "
+            out_string += str(time_diff.seconds%60)+" seconds. "
+            print out_string
     #~ r = f
     #~ print r
+    # display.stop()
     end_time = (datetime.now() - start_time)
     summary_string = "Final time was " + str(end_time.seconds//60%60)
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."

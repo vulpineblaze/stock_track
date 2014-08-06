@@ -3,3 +3,5 @@ pillow
 mysql-python
 numpy
 pytz
+selenium
+pyvirtualdisplay

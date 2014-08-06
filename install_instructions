@@ -11,6 +11,6 @@ source django-env/bin/activate
 pip install -r requirements.txt
 
 sudo apt-get install mysql-server php5-mysql  libmysqlclient-dev
-sudo apt-get install python-mysqldb
+sudo apt-get install python-mysqldb firefox
 
 export PATH=$PATH:/usr/local/mysql/bin
