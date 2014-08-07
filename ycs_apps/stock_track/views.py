@@ -16,7 +16,80 @@ from django.utils import timezone
 from ycs_apps.stock_track.forms import *
 from django.db.models import Q
 
+from django.db import connection
+
+from django.utils import timezone
+from datetime import *
+import _strptime
+import pytz
+
+import csv
+import urllib2
+import StringIO
+
 # Create your views here.
+
+
+
+def analyse_and_put_in_db(company):
+    """ """
+    #~ print row, company
+    #~ row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
+    #~ row_price_open = float(row[1])
+    #~ row_price_high = float(row[2])
+    #~ row_price_low = float(row[3])
+    #~ row_price_close = float(row[4])
+    #~ row_price_volume = float(row[5])
+    #~ row_price_adj_close = float(row[6])
+    
+    price_list = []
+    volume_list = []
+    do_for_count = 10
+    
+    if company.modified:
+        if company.modified.date() == datetime.now(pytz.utc).date():
+            # print "This record was edited today!"
+            return []
+            # pass
+
+    # else:        
+    for daily in company.daily_set.filter().order_by('-date'):
+        #~ print daily.date
+        price_list.append(calc_inflation_by_year(
+                        daily.date.year,
+                        daily.price_close
+                        ))
+        volume_list.append(daily.price_volume)
+
+    #~ price_array = array( price_list )
+    
+
+    if (
+        len(price_list) > 100 and 
+        len(volume_list) > 100 and
+        np.average(volume_list[:100]) > MINIMUM_CURRENT_VOLUME and
+        np.average(price_list[:100]) > MINIMUM_CURRENT_PRICE
+            ):  
+        company.price_average = np.average(price_list)    
+        company.price_stdev = np.std(price_list) 
+        company.price_min = np.amin(price_list) 
+        company.price_max = np.amax(price_list) 
+        company.price_median = np.median(price_list)
+        company.score_undervalue = calc_score_undervalue(price_list)
+        company.has_averages = True 
+        company.modified = timezone.now()
+        
+        company.save()
+         
+        connection.close()    
+    else:
+        company.has_averages = False 
+        company.modified = (datetime.now(pytz.utc) - timedelta(days=5))
+        company.save()
+        connection.close()   
+
+
+
 
 
                                   
@@ -241,4 +314,117 @@ def user_logout(request):
     # Take the user back to the homepage.
     return HttpResponseRedirect('/stock_track/')
 
+
+
+
+@login_required
+def refresh_company_and_analyse(request,pk):
+    the_company = Company.objects.get(pk=pk)
+
+    response = HttpResponseRedirect('/stock_track/detail/'+pk+'/')
+
+    now_ish = datetime.today()
+    future_year = now_ish.year+1
+    past_year = now_ish.year-70
+
+    the_url_string ="http://real-chart.finance.yahoo.com/table.csv?s="
+    the_url_string += str(the_company.ticker)+"&a=11&b=31&c="
+    the_url_string += str(past_year)+"&d=00&e=1&f="
+    the_url_string += str(future_year)+"&g=d&ignore=.csv"
+    
+    # csv_url_opened = urllib2.urlopen(the_url_string)
+    # cr = csv.reader(csv_url_opened)
+
+    print "Get CSV"
+    try:
+        csv_url_opened = urllib2.urlopen(the_url_string)
+        cr = csv.reader(csv_url_opened)
+        the_company.activated = True
+        the_company.save()
+    except:
+        the_company.activated = False
+        the_company.save()
+        return response
+        
+    count = 0
+    centi_count = 0
+
+    print "Daily"
+    daily_queryset = Daily.objects.filter(cid=the_company.id)
+
+    for row in cr:
+        count += 1
+
+        if count == 1:
+            continue
+
+        if count % 1000 == 0:
+            centi_count += 1
+            print str(centi_count*1000)+" Entries reviewed!"    
+
+        f=""
+        row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
+        row_price_open = float(row[1])
+        row_price_high = float(row[2])
+        row_price_low = float(row[3])
+        row_price_close = float(row[4])
+        row_price_volume = float(row[5])
+        row_price_adj_close = float(row[6])
+
+
+        
+        # if value in qs:
+        #     print 'Nice'
+
+        # if not Daily.objects.filter(date=row_date).exists():
+        # if daily_queryset.filter(date=row_date).count() == 0:
+        if not daily_queryset.filter(date=row_date).exists():
+            p, created = Daily.objects.get_or_create(
+                                cid_id = the_company.id,
+                                date = row_date,
+                                price_open = row_price_open,
+                                price_high = row_price_high,
+                                price_low = row_price_low,
+                                price_close = row_price_close,
+                                price_volume = row_price_volume,
+                                price_adj_close = row_price_adj_close
+                                ) 
+
+            if not created:
+                print "Didnt find date:",row_date
+        
+        # try:
+        #     Daily.objects.filter(date=row_date)
+        # except:
+        #     Daily.objects.create(
+        #         cid_id = the_company.id,
+        #         date = row_date,
+        #         price_open = row_price_open,
+        #         price_high = row_price_high,
+        #         price_low = row_price_low,
+        #         price_close = row_price_close,
+        #         price_volume = row_price_volume,
+        #         price_adj_close = row_price_adj_close
+        #         ) 
+    print "Analysis"
+    analyse_and_put_in_db(the_company)
+    connection.close()  
+
+    return response
+
+    # response = render_to_response('stock_track/index.html', {}, context_instance=RequestContext(request))
+    # return response
+    # return HttpResponseRedirect('/stock_track/')
+    # return render_to_response('stock_track/')
+
+# reverse('detail',kwargs={'pk': pk})
+# return reverse('detail',kwargs={'slug': self.get_object().ro_num})
+    # return HttpResponseRedirect(reverse('detail',kwargs={'pk': pk}))
+
+
+# def delete_pic(request,pk):
+#    #+some code to check if New belongs to logged in user
+#    note = NotePic.objects.get(pk=pk).rma.ro_num
+#    u = NotePic.objects.get(pk=pk).delete()     ###
+#    return HttpResponseRedirect('/SATURN/detail/'+note+'/')
 

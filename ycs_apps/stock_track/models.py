@@ -25,7 +25,7 @@ class Company(models.Model):
 class Daily(models.Model):
     cid = models.ForeignKey(Company,db_index=True)
     
-    date = models.DateField(db_index=True)
+    date = models.DateField()
     
     price_open = models.FloatField(default=0.0)
     price_high = models.FloatField(default=0.0)

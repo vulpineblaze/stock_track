@@ -42,8 +42,11 @@ import threading
 
 
 
-HOW_MANY_COMPANIES = 500 # Zero means infinite
+HOW_MANY_COMPANIES = 0 # Zero means infinite
 MAX_THREADS = 10
+
+MINIMUM_CURRENT_PRICE = 5.0
+MINIMUM_CURRENT_VOLUME = 10000
 
 CPI_DICT = {}
 
@@ -91,14 +94,17 @@ def calc_score_undervalue(price_list):
     stdev = np.std(price_list)
     the_min = np.amin(price_list)
     the_max = np.amax(price_list)
+
+    # if current < MINIMUM_CURRENT_PRICE:
+    #     return 0.0 # score irrelevant, stock is junk
     
     if (avg-stdev < the_min or avg+stdev > the_max):
         #~ print avg, stdev, the_min, the_max, current, score
-        return 0 # too volatile
+        return 0.0 # too volatile
     
     if (current < the_min or current > the_max):
         #~ print avg, stdev, the_min, the_max, current, score
-        return 0 # error condition? bad data?
+        return 0.0 # error condition? bad data?
         
     if (current < avg-stdev and current > the_min):
         #~ print avg, stdev, the_min, the_max, current, score
@@ -137,6 +143,7 @@ def analyse_and_put_in_db(company):
     #~ row_price_adj_close = float(row[6])
     
     price_list = []
+    volume_list = []
     do_for_count = 10
     
     if company.modified:
@@ -152,11 +159,17 @@ def analyse_and_put_in_db(company):
                         daily.date.year,
                         daily.price_close
                         ))
+        volume_list.append(daily.price_volume)
 
     #~ price_array = array( price_list )
     
 
-    if len(price_list) > 100:    
+    if (
+        len(price_list) > 100 and 
+        len(volume_list) > 100 and
+        np.average(volume_list[:100]) > MINIMUM_CURRENT_VOLUME and
+        np.average(price_list[:100]) > MINIMUM_CURRENT_PRICE
+            ):  
         company.price_average = np.average(price_list)    
         company.price_stdev = np.std(price_list) 
         company.price_min = np.amin(price_list) 

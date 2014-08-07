@@ -5,6 +5,9 @@
 {% load static %}
 {% load staticfiles %}
 
+
+{% load detail_vars %}
+
 {% csrf_token %}
 
 <link rel="stylesheet" type="text/css" href="{% static 'stock_track/style.css' %}" />
@@ -78,14 +81,29 @@ $(document).ready( function () {
 } );
 </script>
 
-
+<!-- ### -->
 {% if company %}
 
     <div id="table_toggle"><br style="clear: both;" /></div>
     <BR>
     
     <a href="{% url 'lines' company.pk %}"><h3>See Line Chart</h3></a><BR>
+
+    <h3> 
+        {{company.ticker}} : {{company.long_name}}
+        
+
+    </h3>
     
+    <P>
+        This Company has an undervalue-score of: <strong>{{company.score_undervalue}}</strong> <BR>
+        This Company was last modified: {{company.modified.date}} <BR>
+        This Company's activated tag is set to: {{company.activated}} <BR>
+        This Company's has_averages tag is set to: {{company.has_averages}} <BR>
+
+    </P>
+
+    <P>To hard flush and refresh this table <a href="{% url 'refresh' company.pk %}">click here.</a></P>
     <table id="index_table" border="1" width="100%" >
         
         <thead><tr id="header"><!-- Sets first row as header -->

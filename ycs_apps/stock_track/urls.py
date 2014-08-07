@@ -30,6 +30,9 @@ urlpatterns = patterns('',
     url(r'^login/$', views.user_login, name='login'),
     url(r'^logout/$', views.user_logout, name='logout'),
 
+
+    url(r'^refresh/(?P<pk>\w+)/$', views.refresh_company_and_analyse, name='refresh'),
+
     # url(r'^userprofile/(?P<pk>\w+)/$', views.UserProfileUpdateView.as_view(), name='userprofile'),
     # url(r'^pic/(?P<pk>\w+)/$', views.NotePicUpdateView.as_view(), name='pic'),
     # url(r'^newpic/(?P<pk>\w+)/$', views.NotePicCreateView.as_view(), name='newpic'),

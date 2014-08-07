@@ -1,6 +1,7 @@
 {% load staticfiles %}
 {% load static %}
 
+{% load detail_vars %}
 
 
 {% csrf_token %}
@@ -73,15 +74,15 @@
 			<a href="{% url 'index' %}" id="base_list" title="Index">
 				<img src="{% static 'stock_track/images/Icon_list.png'%}"/></a>
 			<BR>
-			<a href="{% url 'index' %}" id="base_new" title="Create New">
+			<a href="{% goto_random_daily %}" id="base_random" title="Get Random Company">
 				<img src="{% static 'stock_track/images/Icon_new.png'%}"/></a>
 			<BR>
-			<a href="{% url 'index' %}" id="base_reports" title="Reports">
+			<!-- <a href="{% url 'index' %}" id="base_reports" title="Reports">
 				<img src="{% static 'stock_track/images/Icon_reports.png'%}"/></a>
 			<BR>
 			<a href="{% url 'index' %}" id="base_user_settings" title="User Settings">
 				<img src="{% static 'stock_track/images/Icon_user_settings.png'%}"/></a> 
-			<BR>
+			<BR> -->
 		</div>
 		</div>
 		

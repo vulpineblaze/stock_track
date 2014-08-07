@@ -129,6 +129,8 @@ def find_acceptable_ticker(ticker_string):
     # elem.send_keys(Keys.RETURN)
     # driver.close()
     
+    page.close()
+
     return found_ticker        
 
 def make_daily_from_row(row, company):
@@ -273,6 +275,7 @@ def build_company_table_from_web():
         
     
     #~ threads = thread_joiner(threads)
+    xml_str.close()
     enumerate_joiner(threading.currentThread())
     return ""
     
@@ -368,6 +371,7 @@ def build_ticker_data_from_web( company):
             #~ break
     
     #~ threads = thread_joiner(threads)
+    response.close()
     enumerate_joiner(threading.currentThread())
     
     return f
