@@ -12,6 +12,7 @@ class Company(models.Model):
     
     activated = models.BooleanField(default=False)
     has_averages = models.BooleanField(default=False)
+    not_traded = models.BooleanField(default=False)
     
     price_average = models.FloatField(default=0.0)
     price_stdev = models.FloatField(default=0.0)

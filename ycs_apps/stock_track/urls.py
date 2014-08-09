@@ -19,8 +19,12 @@ urlpatterns = patterns('',
     # url(r'^new/$', views.CreateView.as_view(), name='new'),
     # url(r'^report/$', views.ReportView.as_view(), name='report'),
     url(r'^detail/(?P<pk>\w+)/$', views.DetailView.as_view(), name='detail'),
+    url(r'^historical/(?P<pk>\w+)/$', views.HistoricalDetailView.as_view(), name='historical'),
     
     url(r'^lines/(?P<pk>\w+)/$', views.LinesDetailView.as_view(), name='lines'),
+
+    url(r'^random_company/$', views.get_random_company, name='random_company'),
+
     
     # url(r'^edit/(?P<slug>\w+)/$', views.UpdateView.as_view(), name='edit'),
     # url(r'^farview/(?P<slug>\w+)/$', views.FARUpdateView.as_view(), name='farview'),
@@ -32,6 +36,17 @@ urlpatterns = patterns('',
 
 
     url(r'^refresh/(?P<pk>\w+)/$', views.refresh_company_and_analyse, name='refresh'),
+
+
+    url(r'^soft_new/(?P<pk>\w+)/$', views.soft_add_new_daily, name='soft_new'),
+    url(r'^soft_old/(?P<pk>\w+)/$', views.soft_add_old_daily, name='soft_old'),
+    url(r'^soft_analyse/(?P<pk>\w+)/$', views.soft_analyse_daily, name='soft_analyse'),
+
+
+    url(r'^toggle_traded/(?P<pk>\w+)/$', views.toggle_not_traded_value, name='toggle_traded'),
+
+
+    url(r'^get_ticker/(?P<pk>\w+)/$', views.get_detail_via_ticker, name='get_ticker'),
 
     # url(r'^userprofile/(?P<pk>\w+)/$', views.UserProfileUpdateView.as_view(), name='userprofile'),
     # url(r'^pic/(?P<pk>\w+)/$', views.NotePicUpdateView.as_view(), name='pic'),

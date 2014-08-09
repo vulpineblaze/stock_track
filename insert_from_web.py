@@ -106,7 +106,13 @@ def find_acceptable_ticker(ticker_string):
     if content:
         if reject_string in content:
             found_ticker = False
-            # print "Rejected "+ticker_string
+            try:
+                not_traded_company = Company.objects.get(ticker=ticker_string)
+                not_traded_company.not_traded = True
+                not_traded_company.save()
+            except:
+                print "ERROR: Found two ", ticker_string
+                            # print "Rejected "+ticker_string
         else:
             found_ticker = True
     #~ print (timezone.now()-start) , count;count+=1
@@ -128,8 +134,8 @@ def find_acceptable_ticker(ticker_string):
     # elem.send_keys("selenium")
     # elem.send_keys(Keys.RETURN)
     # driver.close()
-    
-    page.close()
+    if page:
+        page.close()
 
     return found_ticker        
 
@@ -275,7 +281,8 @@ def build_company_table_from_web():
         
     
     #~ threads = thread_joiner(threads)
-    xml_str.close()
+    if xml_str:
+        xml_str.close()
     enumerate_joiner(threading.currentThread())
     return ""
     
@@ -290,6 +297,9 @@ def build_ticker_data_from_web( company):
     
     now_ish = datetime.today()
     future_year = now_ish.year+1
+
+    if company.not_traded:
+        return ""
 
     if not find_acceptable_ticker(company.ticker):
         company.activated = False
@@ -371,7 +381,8 @@ def build_ticker_data_from_web( company):
             #~ break
     
     #~ threads = thread_joiner(threads)
-    response.close()
+    if response:
+        response.close()
     enumerate_joiner(threading.currentThread())
     
     return f

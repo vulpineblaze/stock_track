@@ -6,6 +6,7 @@ CREATE TABLE `stock_track_company` (
     `modified` datetime NOT NULL,
     `activated` bool NOT NULL,
     `has_averages` bool NOT NULL,
+    `not_traded` bool NOT NULL,
     `price_average` double precision NOT NULL,
     `price_stdev` double precision NOT NULL,
     `price_min` double precision NOT NULL,
@@ -37,6 +38,5 @@ CREATE TABLE `stock_track_userprofile` (
 ALTER TABLE `stock_track_userprofile` ADD CONSTRAINT `user_id_refs_id_11d1bf77` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`);
 CREATE INDEX `stock_track_company_0ea5b775` ON `stock_track_company` (`ticker`);
 CREATE INDEX `stock_track_daily_fdd506be` ON `stock_track_daily` (`cid_id`);
-CREATE INDEX `stock_track_daily_eeede814` ON `stock_track_daily` (`date`);
 
 COMMIT;

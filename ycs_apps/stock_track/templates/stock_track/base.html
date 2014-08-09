@@ -27,8 +27,24 @@
 	
 <!--
 	<meta http-equiv="refresh" content="900">
+
+	<script>
+		$("#procura").on("submit", function(event){     
+
+		    // prevent form from being submitted
+		    event.preventDefault();
+
+		    // get value of text box using .val()
+		    name = $("#procura_texto").val();
+
+		    // compare lower case, as you don't know what they will enter into the field
+		    
+		    //name.toUpperCase()
+		    window.location.href = "stock_track/get_ticker/"+name.toUpperCase());
+		    
+		});
+	</script>
 -->
-    
   </head>
 
 <body>
@@ -59,6 +75,23 @@
                 <a href="/stock_track/login/" id="id_login">|Login|</a>
             </p>
         {% endif %}
+        <div>
+		    <form onSubmit="return checkAnswer();">
+			  <input id="answer" type="text" maxlength="55" class="box" autofocus placeholder="Get detail by Ticker" />
+			  <input type="submit" class="submit" value="Get Ticker" />
+			  </form>
+			  <script>
+			  function checkAnswer(){
+			      var response = document.getElementById('answer').value;
+			      location = 'http://ycs2.yourcompusolutions.com:8000/stock_track/get_ticker/'+response; // 'right.html';
+			      // if (response == "correctanswer")
+			      //     location = 'http://jsbin.com/ukifoh/1'; // 'right.html';
+			      // else
+			      //     location = 'http://jsbin.com/ukifoh/2'; // 'wrong.html';
+			      return false;
+			  }
+			  </script>
+		</div>
     </div>
 	<div class="clear"></div><!-- end upper menu bar -->
 	
@@ -74,7 +107,7 @@
 			<a href="{% url 'index' %}" id="base_list" title="Index">
 				<img src="{% static 'stock_track/images/Icon_list.png'%}"/></a>
 			<BR>
-			<a href="{% goto_random_daily %}" id="base_random" title="Get Random Company">
+			<a href="{% url 'random_company' %}" id="base_random" title="Get Random Company">
 				<img src="{% static 'stock_track/images/Icon_new.png'%}"/></a>
 			<BR>
 			<!-- <a href="{% url 'index' %}" id="base_reports" title="Reports">

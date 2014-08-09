@@ -24,10 +24,10 @@
 
 $(document).ready( function () {
     var indexTable = $('#index_table').DataTable({
-        "order": [[ 0, "desc" ]],
+        "order": [[ 0, "asc" ]],
         "columnDefs": [
             {
-                "targets": [],  //[ 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26 ],
+                "targets": [0],  //[ 5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26 ],
                 "visible": false
             }
         ]
@@ -84,41 +84,95 @@ $(document).ready( function () {
 <!-- ### -->
 {% if company %}
 
-    <div id="table_toggle"><br style="clear: both;" /></div>
-    <BR>
+    <!-- <div id="table_toggle"><br style="clear: both;" /></div> -->
+    <!-- <BR> -->
     
-    <a href="{% url 'lines' company.pk %}"><h3>See Line Chart</h3></a><BR>
-
     <h3> 
+        <a href="{% url 'lines' company.pk %}">See Line Chart</a> |
+        <a href="{% url 'historical' company.pk %}">See Historical Data</a>
+        <BR>
         {{company.ticker}} : {{company.long_name}}
         
 
     </h3>
-    
-    <P>
-        This Company has an undervalue-score of: <strong>{{company.score_undervalue}}</strong> <BR>
-        This Company was last modified: {{company.modified.date}} <BR>
-        This Company's activated tag is set to: {{company.activated}} <BR>
-        This Company's has_averages tag is set to: {{company.has_averages}} <BR>
 
+
+    <P>
+        To attempt to add 50 new entries <a href="{% url 'soft_new' company.pk %}">click here.</a>
+        <BR>
+        To attempt to append 50 old entries <a href="{% url 'soft_old' company.pk %}">click here.</a>
+        <BR>
+        To run the analysis <a href="{% url 'soft_analyse' company.pk %}">click here.</a>
+        <BR>
+        <BR>
+        To toggle the "Not Traded" flag <a href="{% url 'toggle_traded' company.pk %}">click here.</a>
+        <BR> Hint: 'True' is Bad, 'False' is Good.
+        
     </P>
 
-    <P>To hard flush and refresh this table <a href="{% url 'refresh' company.pk %}">click here.</a></P>
     <table id="index_table" border="1" width="100%" >
         
         <thead><tr id="header"><!-- Sets first row as header -->
-            <td>Date</td>
-            <td>Open </td>
-            <td>High</td>
-            <td>Low</td>
-            <td>Close</td>
-            <td>volume</td>
-            <td>Adj Close</td>
+            <td>Order</td>
+            <td>Metric</td>
+            <td>Value </td>
             
         </thead></tr>
         <tbody>
-    {% for item in company.daily_set.all %}
+
         <tr>
+            <td>10</td>
+            <td>Undervalued Score</td>
+            <td><strong>{{company.score_undervalue}}</strong></td>
+        </tr>
+        <tr>
+            <td>20</td>
+            <td>Last Modified</td>
+            <td><strong>{{company.modified.date}}</strong></td>
+        </tr>
+        <tr>
+            <td>30</td>
+            <td>Activated</td>
+            <td><strong>{{company.activated}}</strong></td>
+        </tr>
+        <tr>
+            <td>40</td>
+            <td>Has Good Averages and Volume</td>
+            <td><strong>{{company.has_averages}}</strong></td>
+        </tr>
+        <tr>
+            <td>50</td>
+            <td>Not Traded</td>
+            <td><strong>{{company.not_traded}}</strong></td>
+        </tr>
+        <tr>
+            <td>60</td>
+            <td>Average Price</td>
+            <td><strong>{{company.price_average}}</strong></td>
+        </tr>
+        <tr>
+            <td>70</td>
+            <td>Stardard Deviation</td>
+            <td><strong>{{company.price_stdev}}</strong></td>
+        </tr>
+        <tr>
+            <td>80</td>
+            <td>Lowest Price</td>
+            <td><strong>{{company.price_min}}</strong></td>
+        </tr>
+        <tr>
+            <td>90</td>
+            <td>Highest Price</td>
+            <td><strong>{{company.price_max}}</strong></td>
+        </tr>
+        <tr>
+            <td>100</td>
+            <td>Median Price</td>
+            <td><strong>{{company.price_median}}</strong></td>
+        </tr>
+
+    
+        <!-- <tr>
             <td>{{item.date}}</td>
             <td>{{item.price_open}}</td>
             <td>{{item.price_high}}</td>
@@ -127,12 +181,12 @@ $(document).ready( function () {
             <td>{{item.price_volume}}</td>
             <td>{{item.price_adj_close}}</td>
         </tr>    
-    {%endfor%}    
+        -->
         
         </tbody>
         </tfoot>
         <tr>
-            <td colspan="12"> <a href="{% url 'index' %}">Add New</a> </td>
+            <td colspan="12"> <!-- <a href="{% url 'index' %}">Add New</a> --> </td>
         </tr>
         </tfoot>
     </table>
