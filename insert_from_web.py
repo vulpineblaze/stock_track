@@ -39,7 +39,7 @@ import threading
 
 
 HOW_MANY_COMPANIES = 0 # Zero means infinite
-MAX_THREADS = 10
+MAX_THREADS = 4
 
 
 def thread_joiner(threads):
@@ -94,7 +94,7 @@ def find_acceptable_ticker(ticker_string):
         page = urllib2.urlopen(req)
         content = page.read()
     except urllib2.HTTPError, e:
-        print e.fp.read()
+        print e.fp.read(), "<< Read Error"
         content = None
 
 
@@ -106,12 +106,12 @@ def find_acceptable_ticker(ticker_string):
     if content:
         if reject_string in content:
             found_ticker = False
-            try:
-                not_traded_company = Company.objects.get(ticker=ticker_string)
-                not_traded_company.not_traded = True
-                not_traded_company.save()
-            except:
-                print "ERROR: Found two ", ticker_string
+            # try:
+            #     not_traded_company = Company.objects.get(ticker=ticker_string)
+            #     not_traded_company.not_traded = True
+            #     not_traded_company.save()
+            # except:
+            #     print "ERROR: Found two ", ticker_string
                             # print "Rejected "+ticker_string
         else:
             found_ticker = True
@@ -136,6 +136,7 @@ def find_acceptable_ticker(ticker_string):
     # driver.close()
     if page:
         page.close()
+
 
     return found_ticker        
 
@@ -295,23 +296,28 @@ def build_ticker_data_from_web( company):
     threadLock = threading.Lock()
     threads = []
     
+    actually_done = False
+
     now_ish = datetime.today()
     future_year = now_ish.year+1
 
     if company.not_traded:
-        return ""
+        return False
 
     if not find_acceptable_ticker(company.ticker):
+        company.not_traded = True
         company.activated = False
         company.save()
-        return ""
+        return False
 
     existing_dailies = Daily.objects.filter(cid=company)
     
-    if existing_dailies.count() > 500:
-        company.activated = False
+    if company.activated:
+        return False
+    elif existing_dailies.count() > 500:
+        company.activated = True
         company.save()
-        return ""
+        return False
     elif existing_dailies.count() > 1:
         past_year = now_ish.year-1
         #~ print "Update for "+str(company.ticker)
@@ -342,7 +348,7 @@ def build_ticker_data_from_web( company):
     except:
         company.activated = False
         company.save()
-        return {}
+        return False
         
     count = 0
     recursion = 0
@@ -351,13 +357,17 @@ def build_ticker_data_from_web( company):
     #~ company.activated = True
     #~ company.save()
     
+
     for row in cr:
         count += 1
         recursion += 1
         
         if count == 1:
             continue
-        
+
+        if (count > 200 and actually_done == False):
+            actually_done = True
+
         #~ f = job_server.submit(make_daily_from_row, (row,))
         f=""
         
@@ -366,7 +376,7 @@ def build_ticker_data_from_web( company):
             #~ threads = thread_joiner(threads)
             enumerate_joiner(threading.currentThread())
             
-            
+           
         threads.append(
                 threading.Thread(
                         name='daily_insert_'+str(count), 
@@ -385,24 +395,29 @@ def build_ticker_data_from_web( company):
         response.close()
     enumerate_joiner(threading.currentThread())
     
-    return f
+    return actually_done
 
 
-def parse_commnad_line_args(the_args):
+def parse_command_line_args(the_args):
     """ """
 
     # HOW_MANY_COMPANIES = 0 # Zero means infinite
     # MAX_THREADS = 20
     skip_company_inserts = False
-    help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES> [-k, skips company inserts]'
+    only_do_two_hundred = False
+    help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES>'
+    help_output_string += '\n\t\t -k, \tskips company inserts'
+    help_output_string += '\n\t\t -l, \tstops after 200 companies added'
 
     try:
-        opts, args = getopt.getopt(the_args,"hki:o:",["ifile=","ofile="])
+        opts, args = getopt.getopt(the_args,"hkli:o:",["ifile=","ofile="])
     except getopt.GetoptError:
         print help_output_string;sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
             print help_output_string;sys.exit(2)
+        elif opt == '-l':
+            only_do_two_hundred = True
         elif opt == '-k':
             skip_company_inserts = True
         elif opt in ("-i", "--ifile"):
@@ -419,7 +434,7 @@ def parse_commnad_line_args(the_args):
     print 'MAX_THREADS is ', MAX_THREADS
     print 'MAX_COMPANIES is ', HOW_MANY_COMPANIES
 
-    return skip_company_inserts
+    return skip_company_inserts, only_do_two_hundred
 
     
 def main(the_args):
@@ -428,7 +443,7 @@ def main(the_args):
     temp_time = datetime.now()
     bug_in_threading_workaround_date = datetime.strptime("2014-07-30", '%Y-%m-%d')
     
-    skip_company_inserts = parse_commnad_line_args(the_args)
+    skip_company_inserts, only_do_two_hundred = parse_command_line_args(the_args)
     
     if not skip_company_inserts:
         f = build_company_table_from_web()
@@ -437,19 +452,22 @@ def main(the_args):
     #~ 
     #~ build_ticker_data_from_web()
     
-    obj_list = Company.objects.all()
+    obj_list = Company.objects.filter().exclude(not_traded=True)
+    obj_list = obj_list.exclude(activated=True)
+    obj_list = obj_list.exclude(has_averages=True)
     
     count=0
+    actually_done_count = 0
     divisor = (len(obj_list)*1.0)
     
-    print "Starting processing of "+str(divisor)+" companies."
+    print "Starting processing of "+str(divisor)+" of "+str(obj_list.count())+" companies."
     # display = Display(visible=0, size=(1024, 768))
     # display.start()
     
     for company in obj_list:
         #~ if company.id == 4:
         count += 1
-        f = build_ticker_data_from_web(company)
+        actually_done = build_ticker_data_from_web(company)
         
         if (count > HOW_MANY_COMPANIES and HOW_MANY_COMPANIES > 0):
             break
@@ -458,16 +476,29 @@ def main(the_args):
             temp_time = datetime.now()
             time_diff = temp_time - start_time
             out_string = "Accomplished "
-            out_string += str((1.0*count/divisor)*100)+"% in "
+            percent_float = "{0:.4f}".format((1.0*count/divisor)*100)
+            out_string += str(percent_float)+"% with "
+            out_string += str(actually_done_count)+" added in "
+            out_string += str(time_diff.seconds//3600)+" hours, "
             out_string += str((time_diff.seconds//60)%60)+" minutes, and "
             out_string += str(time_diff.seconds%60)+" seconds. "
             print out_string
+
+        if actually_done:
+            actually_done_count += 1
+
+        if (only_do_two_hundred and  actually_done_count > 200):
+            break
+
     #~ r = f
     #~ print r
     # display.stop()
     end_time = (datetime.now() - start_time)
+
     summary_string = "Final time was " + str(end_time.seconds//60%60)
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
+    if only_do_two_hundred:
+        summary_string += "\n Stopped after 200 companies had dailies added."
     print summary_string
 
 # Here's our payoff idiom!
