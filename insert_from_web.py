@@ -367,6 +367,8 @@ def build_ticker_data_from_web( company):
 
         if (count > 200 and actually_done == False):
             actually_done = True
+            company.activated = True
+            company.save()
 
         #~ f = job_server.submit(make_daily_from_row, (row,))
         f=""
@@ -394,6 +396,7 @@ def build_ticker_data_from_web( company):
     if response:
         response.close()
     enumerate_joiner(threading.currentThread())
+    connection.close()
     
     return actually_done
 
@@ -495,7 +498,8 @@ def main(the_args):
     # display.stop()
     end_time = (datetime.now() - start_time)
 
-    summary_string = "Final time was " + str(end_time.seconds//60%60)
+    summary_string += "Final time was " + str(time_diff.seconds//3600)+" hours, "
+    summary_string += str(end_time.seconds//60%60)
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
     if only_do_two_hundred:
         summary_string += "\n Stopped after 200 companies had dailies added."
