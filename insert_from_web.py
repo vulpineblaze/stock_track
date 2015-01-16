@@ -498,7 +498,7 @@ def main(the_args):
     # display.stop()
     end_time = (datetime.now() - start_time)
 
-    summary_string += "Final time was " + str(time_diff.seconds//3600)+" hours, "
+    summary_string = "Final time was " + str(time_diff.seconds//3600)+" hours, "
     summary_string += str(end_time.seconds//60%60)
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
     if only_do_two_hundred:
