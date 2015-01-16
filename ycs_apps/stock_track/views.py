@@ -141,20 +141,17 @@ def analyse_and_put_in_db(company):
     
 
     if (
-        len(price_list) > 100 and 
-        len(volume_list) > 100 and
-        np.average(volume_list[:100]) > MINIMUM_CURRENT_VOLUME and
-        np.average(price_list[:100]) > MINIMUM_CURRENT_PRICE
+            len(price_list) > 100 and 
+            len(volume_list) > 100 and
+            np.average(volume_list[:100]) > MINIMUM_CURRENT_VOLUME and
+            np.average(price_list[:100]) > MINIMUM_CURRENT_PRICE
             ):  
-        company.price_
-        company.score_undervalue = calc_score_undervalue(price_list)
         company.has_averages = True 
    
     else:
-        company.score_undervalue = calc_score_undervalue(price_list)  
         company.has_averages = False 
          
-
+    company.score_undervalue = calc_score_undervalue(price_list)  
     company.price_average = np.average(price_list)    
     company.price_stdev = np.std(price_list) 
     company.price_min = np.amin(price_list) 
@@ -602,9 +599,15 @@ def refresh_company_and_analyse(request,pk):
 def get_detail_via_ticker(request,pk):
     """ """
     the_ticker = str(pk)
-    the_company = Company.objects.get(ticker=the_ticker)
 
-    response = HttpResponseRedirect('/stock_track/detail/'+str(the_company.pk)+'/')
+    try:
+        the_company = Company.objects.get(ticker=the_ticker)
+        found_pk = the_company.pk
+    except:
+        obj_list = Company.objects.filter().order_by('ticker')
+        found_pk = find_acceptable_pk(obj_list)
+
+    response = HttpResponseRedirect('/stock_track/detail/'+str(found_pk)+'/')
 
     return response
 
