@@ -37,9 +37,18 @@ import StringIO
 
 import threading
 
+# import sys
+# thismodule = sys.modules[__name__]
+# thismodule.foo = 'bar'
 
-HOW_MANY_COMPANIES = 0 # Zero means infinite
-MAX_THREADS = 4
+# def update_foo():
+#   thismodule.foo = 'baz'
+
+st = sys.modules[__name__]
+
+st.HOW_MANY_COMPANIES = 0 # Zero means infinite
+st.ONLY_TWO_HUNDRED_COMPANIES = 10 # Zero crashed it
+st.MAX_THREADS = 4
 
 
 def thread_joiner(threads):
@@ -250,7 +259,7 @@ def build_company_table_from_web():
         #~ obj_list.append(p) 
         
         #~ print recursion
-        if recursion > MAX_THREADS:
+        if recursion > st.MAX_THREADS:
             recursion = 0
             #~ threads = thread_joiner(threads)
             enumerate_joiner(threading.currentThread())
@@ -267,8 +276,8 @@ def build_company_table_from_web():
      
     
         
-        if (count > HOW_MANY_COMPANIES and HOW_MANY_COMPANIES > 0):
-            break
+        # if (count > st.HOW_MANY_COMPANIES and st.HOW_MANY_COMPANIES > 0):
+        #     break
                     
         if count > divisor:
             count = 1
@@ -365,7 +374,7 @@ def build_ticker_data_from_web( company):
         if count == 1:
             continue
 
-        if (count > 200 and actually_done == False):
+        if (count > st.ONLY_TWO_HUNDRED_COMPANIES and actually_done == False):
             actually_done = True
             company.activated = True
             company.save()
@@ -373,7 +382,7 @@ def build_ticker_data_from_web( company):
         #~ f = job_server.submit(make_daily_from_row, (row,))
         f=""
         
-        if recursion > MAX_THREADS:
+        if recursion > st.MAX_THREADS:
             recursion = 0
             #~ threads = thread_joiner(threads)
             enumerate_joiner(threading.currentThread())
@@ -410,7 +419,7 @@ def parse_command_line_args(the_args):
     only_do_two_hundred = False
     help_output_string = 'test.py -i <MAX_THREADS> -o <MAX_COMPANIES>'
     help_output_string += '\n\t\t -k, \tskips company inserts'
-    help_output_string += '\n\t\t -l, \tstops after 200 companies added'
+    help_output_string += '\n\t\t -l, \tstops after <MAX_COMPANIES> companies added'
 
     try:
         opts, args = getopt.getopt(the_args,"hkli:o:",["ifile=","ofile="])
@@ -425,17 +434,18 @@ def parse_command_line_args(the_args):
             skip_company_inserts = True
         elif opt in ("-i", "--ifile"):
             try:
-                MAX_THREADS = int(arg)
+                st.MAX_THREADS = int(arg)
             except:
                 print help_output_string;sys.exit(2)
         elif opt in ("-o", "--ofile"):
             try:
-                HOW_MANY_COMPANIES = int(arg)
+                st.HOW_MANY_COMPANIES = int(arg)
+                st.ONLY_TWO_HUNDRED_COMPANIES = st.HOW_MANY_COMPANIES
             except:
                 print help_output_string;sys.exit(2)
 
-    print 'MAX_THREADS is ', MAX_THREADS
-    print 'MAX_COMPANIES is ', HOW_MANY_COMPANIES
+    print 'MAX_THREADS is ', st.MAX_THREADS
+    print 'MAX_COMPANIES is ', st.HOW_MANY_COMPANIES
 
     return skip_company_inserts, only_do_two_hundred
 
@@ -472,8 +482,8 @@ def main(the_args):
         count += 1
         actually_done = build_ticker_data_from_web(company)
         
-        if (count > HOW_MANY_COMPANIES and HOW_MANY_COMPANIES > 0):
-            break
+        # if (count > st.HOW_MANY_COMPANIES and st.HOW_MANY_COMPANIES > 0):
+        #     break
             
         if ((datetime.now() - temp_time).seconds) > 90 :
             temp_time = datetime.now()
@@ -490,7 +500,7 @@ def main(the_args):
         if actually_done:
             actually_done_count += 1
 
-        if (only_do_two_hundred and  actually_done_count > 200):
+        if (only_do_two_hundred and  actually_done_count > st.ONLY_TWO_HUNDRED_COMPANIES):
             break
 
     #~ r = f
@@ -502,7 +512,7 @@ def main(the_args):
     summary_string += str(end_time.seconds//60%60)
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
     if only_do_two_hundred:
-        summary_string += "\n Stopped after 200 companies had dailies added."
+        summary_string += "\n Stopped after "+str(st.ONLY_TWO_HUNDRED_COMPANIES)+" companies had dailies added."
     print summary_string
 
 # Here's our payoff idiom!
