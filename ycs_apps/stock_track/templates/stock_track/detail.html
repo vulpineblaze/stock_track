@@ -105,8 +105,8 @@ $(document).ready( function () {
         To run the analysis <a href="{% url 'soft_analyse' company.pk %}">click here.</a>
         <BR>
         <BR>
-        To toggle the "Not Traded" flag <a href="{% url 'toggle_traded' company.pk %}">click here.</a>
-        <BR> Hint: 'True' is Bad, 'False' is Good.
+<!--         To toggle the "Not Traded" flag <a href="{% url 'toggle_traded' company.pk %}">click here.</a>
+        <BR> Hint: 'True' is Bad, 'False' is Good. -->
         
     </P>
 
@@ -133,17 +133,38 @@ $(document).ready( function () {
         <tr>
             <td>30</td>
             <td>Activated</td>
-            <td><strong>{{company.activated}}</strong></td>
+            <td><img style ="max-width:24px" src=" 
+                {% if company.activated %}
+                    {% static 'stock_track/images/true.png' %}
+                {% else %}
+                    {% static 'stock_track/images/false.png' %}
+                {% endif %}
+                "/>
+            </td>
         </tr>
         <tr>
             <td>40</td>
             <td>Has Good Averages and Volume</td>
-            <td><strong>{{company.has_averages}}</strong></td>
+            <td><img style ="max-width:24px" src=" 
+                {% if company.has_averages %}
+                    {% static 'stock_track/images/true.png' %}
+                {% else %}
+                    {% static 'stock_track/images/false.png' %}
+                {% endif %}
+                "/>
+            </td>
         </tr>
         <tr>
             <td>50</td>
             <td>Not Traded</td>
-            <td><strong>{{company.not_traded}}</strong></td>
+            <td><img style ="max-width:24px" src=" 
+                {% if not company.not_traded %}
+                    {% static 'stock_track/images/true.png' %}
+                {% else %}
+                    {% static 'stock_track/images/false.png' %}
+                {% endif %}
+                "/>
+            </td>
         </tr>
         <tr>
             <td>60</td>

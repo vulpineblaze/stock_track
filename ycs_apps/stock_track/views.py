@@ -211,7 +211,7 @@ def add_dailies_to_company(the_company, only_try=None,try_old_only=False):
                 break #we we insert only_try, no mater what break
 
             if not try_old_only:
-                if count_daily_found > only_try:
+                if count_daily_found > 365: # only goes back a year
                     break #if new, only_try breaks on founds too
 
         f=""
