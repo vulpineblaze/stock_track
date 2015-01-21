@@ -33,283 +33,6 @@ from random import randint
 
 
 
-MINIMUM_CURRENT_PRICE = 5.0
-MINIMUM_CURRENT_VOLUME = 10000
-
-CPI_DICT = {}
-
-
-
-def calc_inflation_by_year(year, price) : 
-    """ """
-    
-    CPI_DICT = return_cpi_dict()
-    #~ print CPI_DICT['1980']
-    
-    price_adjusted = 0.0
-    year_diff = datetime.today().year - year
-    
-    try:
-        if year < 1970:
-            adj_percent = CPI_DICT['1970']
-        else:
-            adj_percent = CPI_DICT[str(year)]
-    except:
-        print "Year "+str(year)+" not found, using 1970"
-        adj_percent = CPI_DICT['1970']
-    
-    price_adjusted = price * float(adj_percent)
-    
-    return price_adjusted
-
-def calc_score_undervalue(price_list):
-    """ """
-    score = 0.0
-    
-    current = np.average(price_list[:100])
-    avg = np.average(price_list)
-    stdev = np.std(price_list)
-    the_min = np.amin(price_list)
-    the_max = np.amax(price_list)
-
-    # if current < MINIMUM_CURRENT_PRICE:
-    #     return 0.0 # score irrelevant, stock is junk
-    
-    if (avg-stdev < the_min or avg+stdev > the_max):
-        #~ print avg, stdev, the_min, the_max, current, score
-        return 0.0 # too volatile
-    
-    if (current < the_min or current > the_max):
-        #~ print avg, stdev, the_min, the_max, current, score
-        return 0.0 # error condition? bad data?
-        
-    if (current < avg-stdev and current > the_min):
-        #~ print avg, stdev, the_min, the_max, current, score
-        score = (avg-stdev)/current # the sweet spot; larger the better
-        
-    return score
-
-
-def return_cpi_dict():
-    """ """
-    
-    f = open("cpi.csv", 'rt')
-    try:
-        reader = csv.reader(f)
-        for row in reader:
-            #~ print row
-            CPI_DICT[row[0]] = row[1]
-    finally:
-        f.close()
-    
-    return CPI_DICT
-
-
-
-
-def analyse_and_put_in_db(company):
-    """ """
-    #~ print row, company
-    #~ row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
-    #~ row_price_open = float(row[1])
-    #~ row_price_high = float(row[2])
-    #~ row_price_low = float(row[3])
-    #~ row_price_close = float(row[4])
-    #~ row_price_volume = float(row[5])
-    #~ row_price_adj_close = float(row[6])
-    
-    price_list = []
-    volume_list = []
-    do_for_count = 10
-    
-    if company.modified:
-        if company.modified.date() == datetime.now(pytz.utc).date():
-            # print "This record was edited today!"
-            return []
-            # pass
-
-    # else:        
-    for daily in company.daily_set.filter().order_by('-date'):
-        #~ print daily.date
-        price_list.append(calc_inflation_by_year(
-                        daily.date.year,
-                        daily.price_close
-                        ))
-        volume_list.append(daily.price_volume)
-
-    #~ price_array = array( price_list )
-    
-
-    if (
-            len(price_list) > 100 and 
-            len(volume_list) > 100 and
-            np.average(volume_list[:100]) > MINIMUM_CURRENT_VOLUME and
-            np.average(price_list[:100]) > MINIMUM_CURRENT_PRICE
-            ):  
-        company.has_averages = True 
-   
-    else:
-        company.has_averages = False 
-         
-    company.score_undervalue = calc_score_undervalue(price_list)  
-    company.price_average = np.average(price_list)    
-    company.price_stdev = np.std(price_list) 
-    company.price_min = np.amin(price_list) 
-    company.price_max = np.amax(price_list) 
-    company.price_median = np.median(price_list)
-    company.modified = timezone.now()
-
-    company.save()
-    connection.close()
-
-
-def add_dailies_to_company(the_company, only_try=None,try_old_only=False):
-    """ """
-
-    now_ish = datetime.today()
-    future_year = now_ish.year+1
-    past_year = now_ish.year-70
-
-    the_url_string ="http://real-chart.finance.yahoo.com/table.csv?s="
-    the_url_string += str(the_company.ticker)+"&a=11&b=31&c="
-    the_url_string += str(past_year)+"&d=00&e=1&f="
-    the_url_string += str(future_year)+"&g=d&ignore=.csv"
-    
-
-
-    print "Get CSV"
-    try:
-        csv_url_opened = urllib2.urlopen(the_url_string)
-        cr = csv.reader(csv_url_opened)
-        the_company.activated = True
-        the_company.save()
-    except:
-        the_company.activated = False
-        the_company.save()
-        return response
-        
-    count = 0
-    count_actually_inserted = 0
-    count_daily_found = 0
-    centi_count = 0
-
-    print "Daily"
-    daily_queryset = Daily.objects.filter(cid=the_company.id)
-
-    for row in cr:
-        count += 1
-
-        if count == 1:
-            continue
-
-        if count % 1000 == 0:
-            centi_count += 1
-            print str(centi_count*1000)+" Entries reviewed!"   
-
-        if only_try:
-            if count_actually_inserted > only_try:
-                break #we we insert only_try, no mater what break
-
-            if not try_old_only:
-                if count_daily_found > 365: # only goes back a year
-                    break #if new, only_try breaks on founds too
-
-        f=""
-        row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
-        row_price_open = float(row[1])
-        row_price_high = float(row[2])
-        row_price_low = float(row[3])
-        row_price_close = float(row[4])
-        row_price_volume = float(row[5])
-        row_price_adj_close = float(row[6])
-
-
-        
-
-        if not daily_queryset.filter(date=row_date).exists():
-            count_actually_inserted += 1
-            p, created = Daily.objects.get_or_create(
-                                cid_id = the_company.id,
-                                date = row_date,
-                                price_open = row_price_open,
-                                price_high = row_price_high,
-                                price_low = row_price_low,
-                                price_close = row_price_close,
-                                price_volume = row_price_volume,
-                                price_adj_close = row_price_adj_close
-                                ) 
-
-            if not created:
-                print "Didnt find date:",row_date
-
-        else:
-            count_daily_found += 1
-
-
-def find_acceptable_pk(obj_list):
-    """ """
-
-    found_pk = 0
-    condition = False
-    reject_string = "This is an unknown symbol."
-
-    total_objs = obj_list.count()
-
-    while not condition:
-        rand_int = randint(1,total_objs)
-        the_company = obj_list.get(pk=rand_int)
-        ticker_string = the_company.ticker
-        if "." in ticker_string:
-            continue
-
-
-
-        site= "http://www.nasdaq.com/symbol/"+ticker_string
-        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
-               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-               'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-               'Accept-Encoding': 'none',
-               'Accept-Language': 'en-US,en;q=0.8',
-               'Connection': 'keep-alive'}
-
-        req = urllib2.Request(site, headers=hdr)
-
-        try:
-            page = urllib2.urlopen(req)
-            content = page.read()
-        except urllib2.HTTPError, e:
-            print e.fp.read()
-            content = None
-
-        if content:
-            if reject_string in content:
-                condition = False
-                # print "Rejected "+ticker_string
-            else:
-                condition = True
-                found_pk = the_company.pk
-        
-    return found_pk   
-
-
-
-
-# def get_nasdaq_safe_rand(obj_list):
-#     """ """
-#     found_pk = 0
-#     condition = False
-
-#     rand_int = randint(1,obj_list.count())
-
-#     while not condition:
-#         if find_acceptable_ticker(obj_list.get(pk=rand_int).ticker):
-#             condition = True
-#             found_pk = rand_int
-
-
-#     return found_pk
-
-
 
 
 
@@ -569,12 +292,13 @@ def refresh_company_and_analyse(request,pk):
 
     response = HttpResponseRedirect('/stock_track/detail/'+pk+'/')
 
-    add_dailies_to_company(the_company)
+    the_company.add_dailies_to_company()
+
         
 
         #         ) 
     print "Analysis"
-    analyse_and_put_in_db(the_company)
+    the_company.analyse_and_put_in_db()
     connection.close()  
 
     return response
@@ -605,7 +329,7 @@ def get_detail_via_ticker(request,pk):
         found_pk = the_company.pk
     except:
         obj_list = Company.objects.filter().order_by('ticker')
-        found_pk = find_acceptable_pk(obj_list)
+        found_pk = obj_list.find_acceptable_pk()
 
     response = HttpResponseRedirect('/stock_track/detail/'+str(found_pk)+'/')
 
@@ -623,7 +347,7 @@ def soft_add_new_daily(request,pk):
 
     response = HttpResponseRedirect('/stock_track/detail/'+str(pk)+'/')
 
-    add_dailies_to_company(the_company, only_try=50)
+    the_company.add_dailies_to_company(only_try=50)
 
     return response
 
@@ -636,7 +360,7 @@ def soft_add_old_daily(request,pk):
 
     response = HttpResponseRedirect('/stock_track/detail/'+str(pk)+'/')
 
-    add_dailies_to_company(the_company, only_try=50,try_old_only=True)
+    the_company.add_dailies_to_company(only_try=50,try_old_only=True)
 
     return response
 
@@ -646,12 +370,11 @@ def soft_analyse_daily(request,pk):
     # the_ticker = str(pk)
     the_company = Company.objects.get(pk=pk)
 
-    response = HttpResponseRedirect('/stock_track/detail/'+str(pk)+'/')
-
-    print "Analysis"
-    analyse_and_put_in_db(the_company)
+    # print "Analysis"
+    the_company.analyse_and_put_in_db()
     connection.close()  
 
+    response = HttpResponseRedirect('/stock_track/detail/'+str(pk)+'/')
     return response
 
 
@@ -683,7 +406,7 @@ def get_random_company(request):
     
     obj_list = Company.objects.filter().order_by('ticker')
 
-    found_pk = find_acceptable_pk(obj_list)
+    found_pk = obj_list.find_acceptable_pk()
 
 
     response = HttpResponseRedirect('/stock_track/detail/'+str(found_pk)+'/')

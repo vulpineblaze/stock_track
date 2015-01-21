@@ -48,6 +48,7 @@ st = sys.modules[__name__]
 
 st.HOW_MANY_COMPANIES = 0 # Zero means infinite
 st.ONLY_TWO_HUNDRED_COMPANIES = 10 # Zero crashed it
+st.DAILIES_TO_BECOME_ACTIVE = 500 
 st.MAX_THREADS = 4
 
 
@@ -291,8 +292,8 @@ def build_company_table_from_web():
         
     
     #~ threads = thread_joiner(threads)
-    if xml_str:
-        xml_str.close()
+    # if xml_str:
+    #     xml_str.close()
     enumerate_joiner(threading.currentThread())
     return ""
     
@@ -323,7 +324,7 @@ def build_ticker_data_from_web( company):
     
     if company.activated:
         return False
-    elif existing_dailies.count() > 500:
+    elif existing_dailies.count() > st.DAILIES_TO_BECOME_ACTIVE:
         company.activated = True
         company.save()
         return False
@@ -374,7 +375,7 @@ def build_ticker_data_from_web( company):
         if count == 1:
             continue
 
-        if (count > st.ONLY_TWO_HUNDRED_COMPANIES and actually_done == False):
+        if (count > st.DAILIES_TO_BECOME_ACTIVE and actually_done == False):
             actually_done = True
             company.activated = True
             company.save()
@@ -453,7 +454,7 @@ def parse_command_line_args(the_args):
 def main(the_args):
     """ business logic for when running this module as the primary one!"""
     start_time = datetime.now()
-    temp_time = datetime.now()
+    temp_time = datetime.now() - timedelta(minutes=2) #datetime.datetime.now() - datetime.timedelta(minutes=15)
     bug_in_threading_workaround_date = datetime.strptime("2014-07-30", '%Y-%m-%d')
     
     skip_company_inserts, only_do_two_hundred = parse_command_line_args(the_args)
@@ -465,9 +466,10 @@ def main(the_args):
     #~ 
     #~ build_ticker_data_from_web()
     
-    obj_list = Company.objects.filter().exclude(not_traded=True)
-    obj_list = obj_list.exclude(activated=True)
-    obj_list = obj_list.exclude(has_averages=True)
+    # obj_list = Company.objects.filter().exclude(not_traded=True)
+    # obj_list = obj_list.exclude(activated=True)
+    # obj_list = obj_list.exclude(has_averages=True)
+    obj_list = Company.objects.filter(not_traded=False,activated=False,has_averages=False)
     
     count=0
     actually_done_count = 0
@@ -513,6 +515,9 @@ def main(the_args):
     summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
     if only_do_two_hundred:
         summary_string += "\n Stopped after "+str(st.ONLY_TWO_HUNDRED_COMPANIES)+" companies had dailies added."
+
+    left_obj_list = Company.objects.filter(not_traded=False,activated=False,has_averages=False)
+    summary_string += "\nTotal went from "+str(obj_list.count())+" to "+str(left_obj_list.count())+" companies."
     print summary_string
 
 # Here's our payoff idiom!

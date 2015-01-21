@@ -1,0 +1,2 @@
+python ~/django_projs/ycs_apps/insert_from_web.py -i 10 -o 200 -k -l > ~/inserts_output 2>&1
+python ~/django_projs/ycs_apps/analytic_script.py

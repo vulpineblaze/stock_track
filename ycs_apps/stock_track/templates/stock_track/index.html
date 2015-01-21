@@ -86,7 +86,7 @@ $(document).ready( function () {
     
     <table id="index_table" border="1" width="100%" >
         
-        <thead><tr id="header"><!-- Sets first row as header -->
+        <thead><tr id="header"><!-- Sets first row as header ### -->
             <td>Company</td>
             <td>Long Name</td>
             <td>pk</td>
@@ -113,14 +113,14 @@ $(document).ready( function () {
             
             <td> {{item.pk}} </td>
             
-            <td> {{item.price_average}} </td>
-            <td> {{item.price_stdev}} </td>
-            <td> {{item.price_min}} </td>
-            <td> {{item.price_max}} </td>
-            <td> {{item.price_median}} </td>
+            <td> {{item.price_average|floatformat:3}} </td>
+            <td> {{item.price_stdev|floatformat:3}} </td>
+            <td> {{item.price_min|floatformat:3}} </td>
+            <td> {{item.price_max|floatformat:3}} </td>
+            <td> {{item.price_median|floatformat:3}} </td>
             
             
-            <td> {{item.score_undervalue}} </td>
+            <td> <strong> {{item.score_undervalue|floatformat:3}} </strong> </td>
             
         </tr>    
     {%endfor%}    
