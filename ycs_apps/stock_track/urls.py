@@ -24,6 +24,7 @@ urlpatterns = patterns('',
     url(r'^lines/(?P<pk>\w+)/$', views.LinesDetailView.as_view(), name='lines'),
 
     url(r'^random_company/$', views.get_random_company, name='random_company'),
+    url(r'^refresh_all_companies/$', views.refresh_all_companies, name='refresh_all_companies'),
 
     
     # url(r'^edit/(?P<slug>\w+)/$', views.UpdateView.as_view(), name='edit'),

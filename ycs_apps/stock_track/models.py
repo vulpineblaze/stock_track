@@ -14,6 +14,9 @@ import numpy as np
 
 from random import randint
 
+from Queue import Queue
+from threading import Thread
+
 
 
 # Create your models here.
@@ -24,7 +27,53 @@ MINIMUM_CURRENT_VOLUME = 10000
 
 CPI_DICT = {}
 
+def reset_database_connection():  
+    from django import db  
+    db.close_connection()  
 
+class Worker(Thread):
+    """Thread executing tasks from a given tasks queue"""
+    def __init__(self, tasks):
+        Thread.__init__(self)
+        self.tasks = tasks
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        while True:
+            func, args, kargs = self.tasks.get()
+            try:
+                func(*args, **kargs)
+            except Exception, e:
+                print e
+            finally:
+                self.tasks.task_done()
+
+class ThreadPool:
+    """Pool of threads consuming tasks from a queue"""
+    def __init__(self, num_threads):
+        self.tasks = Queue(num_threads)
+        for _ in range(num_threads): Worker(self.tasks)
+
+    def add_task(self, func, *args, **kargs):
+        """Add a task to the queue"""
+        self.tasks.put((func, args, kargs))
+
+    def wait_completion(self):
+        """Wait for completion of all the tasks in the queue"""
+        self.tasks.join()
+
+def enumerate_joiner(main_thread):
+    #~ main_thread = threading.currentThread()
+    for t in threading.enumerate():
+        if t is main_thread:
+            continue
+        #~ logging.debug('joining %s', t.getName())
+        try:
+            t.join()
+        except:
+            print "error joining "+str(t.getName())
+            continue
 
 def calc_inflation_by_year(year, price) : 
     """ """
@@ -140,6 +189,63 @@ class CompanyQuerySet(models.query.QuerySet):
             
         return found_pk   
 
+    def attempt_to_add_new_to_all(self, max_threads=4, quit_after_trying=0):
+        """ """
+
+        print "Request to process new dailies for "+str(quit_after_trying)+" companies has been received."
+        # threads = []
+        count = 0
+        # recursion = 0
+
+        start_time = datetime.now()
+        reset_database_connection()
+
+        pool = ThreadPool(max_threads)       
+
+        # for i, d in enumerate(delays):
+        #     pool.add_task(wait_delay, d)
+
+
+        for company in self.iterator():
+            count += 1
+            # recursion += 1
+
+        # if recursion > max_threads:
+        #     recursion = 0
+        #     #~ threads = thread_joiner(threads)
+        #     enumerate_joiner(threading.currentThread())
+                
+            pool.add_task(company.add_dailies_to_company, (max_threads,quit_after_trying))   
+            # threads.append(
+            #     threading.Thread(
+            #         name='daily_insert_'+str(count), 
+            #         target=company.add_dailies_to_company,
+            #         args=(max_threads,quit_after_trying)
+            #         ).start()
+            #     )
+
+            if quit_after_trying and quit_after_trying > 0:
+                if count >= quit_after_trying:
+                    break
+
+
+
+
+        pool.wait_completion()
+        # enumerate_joiner(threading.currentThread())
+        # connection.close()
+        reset_database_connection()
+
+        end_time = (datetime.now() - start_time)
+
+        summary_string = "Final time was " + str(end_time.seconds//3600)+" hours, "
+        summary_string += str(end_time.seconds//60%60)
+        summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
+        summary_string += "\n Processed " +str(count)+"|"+str(quit_after_trying)+ " companies."
+        print summary_string
+
+        return 
+
 
 class CompanyManager(models.Manager):
     '''Use this class to define methods just on Entry.objects.'''
@@ -183,7 +289,7 @@ class Company(models.Model):
         
 
 
-        print "Get CSV"
+        # print "Get CSV"
         try:
             csv_url_opened = urllib2.urlopen(the_url_string)
             cr = csv.reader(csv_url_opened)
@@ -199,7 +305,7 @@ class Company(models.Model):
         count_daily_found = 0
         centi_count = 0
 
-        print "Daily"
+        # print "Daily"
         daily_queryset = Daily.objects.filter(cid=self.id)
 
         for row in cr:
@@ -251,8 +357,12 @@ class Company(models.Model):
             else:
                 count_daily_found += 1
 
+        if csv_url_opened:
+            csv_url_opened.close()
+
         connection.close()
-        print "Add Dailies Finished"
+        # print "Add Dailies Finished for "+str(self.ticker)
+        return
 
     def analyse_and_put_in_db(self):
         """ """                 
@@ -276,7 +386,7 @@ class Company(models.Model):
                 # pass
 
         # else:        
-        for daily in self.daily_set.filter().order_by('-date'):
+        for daily in self.daily_set.filter().order_by('-date').iterator():
             #~ print daily.date
             price_list.append(calc_inflation_by_year(
                             daily.date.year,

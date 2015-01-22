@@ -415,4 +415,18 @@ def get_random_company(request):
 
     return response
 
+
+@login_required
+def refresh_all_companies(request):
+    """ """
+    
+    obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
+
+    obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=5) ##
+
+    connection.close()  
+
+    response = HttpResponseRedirect('/stock_track/')
+
+    return response
     

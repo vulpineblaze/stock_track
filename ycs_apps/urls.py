@@ -13,6 +13,8 @@ urlpatterns = patterns('',
     
     url(r'^(?i)stock_track/', include('ycs_apps.stock_track.urls', namespace="stock_track")),
     url(r'^(?i)stock_track/', include('ycs_apps.stock_track.urls')),
+    url(r'^(?i)/', include('ycs_apps.stock_track.urls', namespace="stock_track")),
+    url(r'^(?i)/', include('ycs_apps.stock_track.urls')),
     
     
 )

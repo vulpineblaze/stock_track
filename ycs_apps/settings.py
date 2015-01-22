@@ -13,6 +13,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
@@ -20,9 +22,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '1*bd%h5*$ypqmysa6b7=s4wp+@m*0(cl*_g)b_bgub-6k($4wj'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -52,6 +54,8 @@ ROOT_URLCONF = 'ycs_apps.urls'
 
 WSGI_APPLICATION = 'ycs_apps.wsgi.application'
 
+ALLOWED_HOSTS = ("yourcompusolutions.com",
+                "ycs2.yourcompusolutions.com")
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
@@ -95,3 +99,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATIC_ROOT = os.path.join(BASE_DIR, '../staticfiles/')
