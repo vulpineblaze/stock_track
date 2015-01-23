@@ -26,8 +26,8 @@ DEBUG = False
 
 TEMPLATE_DEBUG = False
 
-ALLOWED_HOSTS = []
-
+# ALLOWED_HOSTS = []
+# 
 
 # Application definition
 
@@ -54,7 +54,9 @@ ROOT_URLCONF = 'ycs_apps.urls'
 
 WSGI_APPLICATION = 'ycs_apps.wsgi.application'
 
-ALLOWED_HOSTS = ("yourcompusolutions.com",
+ALLOWED_HOSTS = ("localhost",
+                "127.0.0.1",
+                "yourcompusolutions.com",
                 "ycs2.yourcompusolutions.com")
 
 # Database

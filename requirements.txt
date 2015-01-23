@@ -5,4 +5,5 @@ numpy
 pytz
 selenium
 pyvirtualdisplay
-spawning
+gunicorn
+gevent

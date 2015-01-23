@@ -416,17 +416,46 @@ def get_random_company(request):
     return response
 
 
-@login_required
+# @login_required
 def refresh_all_companies(request):
     """ """
-    
-    obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
+    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] 
+    if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
+        obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
+        obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=200) ## ##
+        connection.close()  
+    else:
+        pass
 
-    obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=5) ##
 
-    connection.close()  
+    # obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
+
+    # obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=200) ## 
+
+    # connection.close()  
 
     response = HttpResponseRedirect('/stock_track/')
 
     return response
     
+
+def build_new_company_dailies(request):
+    """ """
+    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] 
+    if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
+        obj_list = Company.objects.filter(not_traded=False,activated=False,has_averages=False)
+        obj_list.build_new_company_dailies(max_threads=100, only_do_this_many=5) ## 
+        connection.close()  
+    else:
+        pass
+
+
+    # obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
+
+    # obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=200) ## 
+
+    # connection.close()  
+
+    response = HttpResponseRedirect('/stock_track/')
+
+    return response

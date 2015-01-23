@@ -80,8 +80,9 @@ $(document).ready( function () {
 
     <P>
 
-        To attempt the refresh-all script <a href="/stock_track/refresh_all_companies">click here.</a>
-        <BR>
+        To attempt the refresh-all script <a href="/stock_track/refresh_all_companies">click here.</a><BR>
+        To attempt the add new companies script <a href="/stock_track/build_new_company_dailies">click here.</a><BR>
+        
         <BR>
         
     </P>
@@ -111,7 +112,7 @@ $(document).ready( function () {
     {% for item in object_list %}
         <tr>
             <td>
-                <a href="{% url 'detail' item.pk %}" id="detail_link_{{item.pk}}">
+                <a href="/stock_track/detail/{{item.pk }}" id="detail_link_{{item.pk}}">
                     {{ item.ticker }}
                 </a>
             </td>

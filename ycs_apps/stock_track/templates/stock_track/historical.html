@@ -88,8 +88,8 @@ $(document).ready( function () {
     <BR>
     
     <h3> 
-        <a href="{% url 'lines' company.pk %}">See Line Chart</a> |
-        <a href="{% url 'detail' company.pk %}">See Summary</a>
+        <a href="/stock_track/lines/{{company.pk }}">See Line Chart</a> |
+        <a href="/stock_track/detail/{{company.pk }}">See Summary</a>
         <BR>
         {{company.ticker}} : {{company.long_name}}
         

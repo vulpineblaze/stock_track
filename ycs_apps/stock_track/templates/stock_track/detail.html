@@ -88,8 +88,8 @@ $(document).ready( function () {
     <!-- <BR> -->
     
     <h3> 
-        <a href="{% url 'lines' company.pk %}">See Line Chart</a> |
-        <a href="{% url 'historical' company.pk %}">See Historical Data</a>
+        <a href="/stock_track/lines/{{company.pk }}">See Line Chart</a> |
+        <a href="/stock_track/historical/{{company.pk}}">See Historical Data</a>
         <BR>
         {{company.ticker}} : {{company.long_name}}
         
@@ -98,15 +98,15 @@ $(document).ready( function () {
 
 
     <P>
-        To attempt to add 50 new entries <a href="{% url 'soft_new' company.pk %}">click here.</a>
+        To attempt to add 50 new entries <a href="/stock_track/soft_new/{{company.pk }}">click here.</a>
         <BR>
-        To attempt to append 50 old entries <a href="{% url 'soft_old' company.pk %}">click here.</a>
+        To attempt to append 50 old entries <a href="/stock_track/soft_old/{{company.pk }}">click here.</a>
         <BR>
-        To run the analysis <a href="{% url 'soft_analyse' company.pk %}">click here.</a>
+        To run the analysis <a href="/stock_track/soft_analyse/{{company.pk }}">click here.</a>
         <BR>
         <BR>
-<!--         To toggle the "Not Traded" flag <a href="{% url 'toggle_traded' company.pk %}">click here.</a>
-        <BR> Hint: 'True' is Bad, 'False' is Good. -->
+
+
         
     </P>
 

@@ -2,6 +2,8 @@ from django.db import models, connection
 
 from django.contrib.auth.models import User
 
+from django.core.cache import cache
+
 from datetime import *
 import pytz
 from django.utils import timezone
@@ -17,7 +19,8 @@ from random import randint
 from Queue import Queue
 from threading import Thread
 
-
+# from xml.dom import minidom
+import urllib, cookielib
 
 # Create your models here.
 
@@ -29,7 +32,8 @@ CPI_DICT = {}
 
 def reset_database_connection():  
     from django import db  
-    db.close_connection()  
+    db.close_connection() 
+    cache.clear() 
 
 class Worker(Thread):
     """Thread executing tasks from a given tasks queue"""
@@ -246,6 +250,52 @@ class CompanyQuerySet(models.query.QuerySet):
 
         return 
 
+    def build_new_company_dailies(self, max_threads=4, only_do_this_many=1):
+        """ business logic for when running this module as the primary one!"""
+        start_time = datetime.now()
+        temp_time = datetime.now() - timedelta(minutes=2) #datetime.datetime.now() - datetime.timedelta(minutes=15)
+        bug_in_threading_workaround_date = datetime.strptime("2014-07-30", '%Y-%m-%d')
+        
+        count=0
+        actually_done_count = 0
+        divisor = (len(self)*1.0)
+        
+        print "Starting processing of "+str(divisor)+" of "+str(self.count())+" companies."
+        
+        for company in self:
+            count += 1
+            actually_done = company.build_ticker_data_from_web(max_threads)
+                
+            if ((datetime.now() - temp_time).seconds) > 90 :
+                temp_time = datetime.now()
+                time_diff = temp_time - start_time
+                out_string = "Accomplished "
+                percent_float = "{0:.4f}".format((1.0*count/divisor)*100)
+                out_string += str(percent_float)+"% with "
+                out_string += str(actually_done_count)+" added in "
+                out_string += str(time_diff.seconds//3600)+" hours, "
+                out_string += str((time_diff.seconds//60)%60)+" minutes, and "
+                out_string += str(time_diff.seconds%60)+" seconds. "
+                print out_string
+
+            if actually_done:
+                actually_done_count += 1
+
+            if (only_do_this_many and  actually_done_count > only_do_this_many):
+                break
+
+        end_time = (datetime.now() - start_time)
+
+        summary_string = "Final time was " + str(time_diff.seconds//3600)+" hours, "
+        summary_string += str(end_time.seconds//60%60)
+        summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
+        if only_do_this_many:
+            summary_string += "\n Stopped after "+str(only_do_this_many)+" companies had dailies added."
+
+        left_obj_list = self.filter()
+        summary_string += "\nTotal went from "+str(divisor)+" to "+str(left_obj_list.count())+" companies."
+        print summary_string
+
 
 class CompanyManager(models.Manager):
     '''Use this class to define methods just on Entry.objects.'''
@@ -420,6 +470,151 @@ class Company(models.Model):
         connection.close()
         print "Analysis Finished"
 
+    def build_ticker_data_from_web(self, max_threads=4): # self = company
+        """    """
+        
+        DAILIES_TO_BECOME_ACTIVE = 500 # Need ~1.5y to become active
+        actually_done = False
+
+        now_ish = datetime.today()
+        future_year = now_ish.year+1
+
+        if self.not_traded:
+            return False
+
+        if not self.find_acceptable_ticker():
+            self.not_traded = True
+            self.activated = False
+            self.save()
+            return False
+
+        existing_dailies = Daily.objects.filter(cid=self)
+        
+        if self.activated:
+            return False
+        elif existing_dailies.count() > DAILIES_TO_BECOME_ACTIVE: 
+            self.activated = True
+            self.save()
+            return False
+        elif existing_dailies.count() > 1:
+            past_year = now_ish.year-1
+            #~ print "Update for "+str(self.ticker)
+        else:
+            past_year = now_ish.year-70
+            #~ print "New Entry for "+str(self.ticker)
+
+        
+        the_url_string ="http://real-chart.finance.yahoo.com/table.csv?s="
+        the_url_string += str(self.ticker)+"&a=11&b=31&c="
+        the_url_string += str(past_year)+"&d=00&e=1&f="
+        the_url_string += str(future_year)+"&g=d&ignore=.csv"
+        
+
+        try:
+            response = urllib2.urlopen(the_url_string)
+            cr = csv.reader(response)
+            self.activated = True
+            self.save()
+        except:
+            self.activated = False
+            self.save()
+            return False
+            
+        count = 0
+        recursion = 0
+        was_made = False
+        
+        #~ self.activated = True
+        #~ self.save()
+
+        pool = ThreadPool(max_threads)       
+
+        for row in cr:
+            count += 1
+            recursion += 1
+            
+            if count == 1:
+                continue
+
+            if (count > DAILIES_TO_BECOME_ACTIVE and actually_done == False):
+                actually_done = True
+                self.activated = True
+                self.save()
+                
+            pool.add_task(self.make_daily_from_row, row)  
+
+
+        if response:
+            response.close()
+
+        pool.wait_completion()
+        reset_database_connection()
+        
+        return actually_done
+
+    def make_daily_from_row(self, row):
+        """ """
+        #~ print row, self
+        row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
+        row_price_open = float(row[1])
+        row_price_high = float(row[2])
+        row_price_low = float(row[3])
+        row_price_close = float(row[4])
+        row_price_volume = float(row[5])
+        row_price_adj_close = float(row[6])
+        
+
+            
+        p, was_made = Daily.objects.get_or_create(
+            cid_id = self.id,
+            date = row_date,
+            price_open = row_price_open,
+            price_high = row_price_high,
+            price_low = row_price_low,
+            price_close = row_price_close,
+            price_volume = row_price_volume,
+            price_adj_close = row_price_adj_close
+            )
+         
+        connection.close()    
+        #~ return p , was_made
+
+
+
+
+    def find_acceptable_ticker(self):
+        ticker_string = str(self.ticker)
+        found_ticker = False
+        reject_string = "This is an unknown symbol."
+
+        site= "http://www.nasdaq.com/symbol/"+ticker_string
+        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+               'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+               'Accept-Encoding': 'none',
+               'Accept-Language': 'en-US,en;q=0.8',
+               'Connection': 'keep-alive'}
+
+        req = urllib2.Request(site, headers=hdr)
+
+        try:
+            page = urllib2.urlopen(req)
+            content = page.read()
+        except urllib2.HTTPError, e:
+            print e.fp.read(), "<< Read Error"
+            content = None
+
+        if content:
+            if reject_string in content:
+                found_ticker = False
+
+            else:
+                found_ticker = True
+
+        if page:
+            page.close()
+
+        return found_ticker        
 
 
 
