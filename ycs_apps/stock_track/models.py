@@ -193,7 +193,7 @@ class CompanyQuerySet(models.query.QuerySet):
             
         return found_pk   
 
-    def attempt_to_add_new_to_all(self, max_threads=4, quit_after_trying=0):
+    def attempt_to_add_new_to_all(self, only_try=100, max_threads=4, quit_after_trying=0):
         """ """
 
         print "Request to process new dailies for "+str(quit_after_trying)+" companies has been received."
@@ -219,7 +219,7 @@ class CompanyQuerySet(models.query.QuerySet):
         #     #~ threads = thread_joiner(threads)
         #     enumerate_joiner(threading.currentThread())
                 
-            pool.add_task(company.add_dailies_to_company, (max_threads,quit_after_trying))   
+            pool.add_task(company.add_dailies_to_company, (only_try,quit_after_trying))   
             # threads.append(
             #     threading.Thread(
             #         name='daily_insert_'+str(count), 
@@ -248,7 +248,7 @@ class CompanyQuerySet(models.query.QuerySet):
         summary_string += "\n Processed " +str(count)+"|"+str(quit_after_trying)+ " companies."
         print summary_string
 
-        return 
+        return summary_string
 
     def build_new_company_dailies(self, max_threads=4, only_do_this_many=1):
         """ business logic for when running this module as the primary one!"""
@@ -295,6 +295,7 @@ class CompanyQuerySet(models.query.QuerySet):
         left_obj_list = self.filter()
         summary_string += "\nTotal went from "+str(divisor)+" to "+str(left_obj_list.count())+" companies."
         print summary_string
+        return summary_string
 
 
 class CompanyManager(models.Manager):
@@ -338,13 +339,30 @@ class Company(models.Model):
         the_url_string += str(future_year)+"&g=d&ignore=.csv"
         
 
+        if self.not_traded:
+            return False
+
+        if not self.find_acceptable_ticker():
+            self.not_traded = True
+            self.activated = False
+            self.save()
+            return False
+
+        daily_queryset = Daily.objects.filter(cid=self.id)
+        
+        if self.activated:
+            return False
+        elif daily_queryset.count() > DAILIES_TO_BECOME_ACTIVE: 
+            self.activated = True
+            self.save()
+            return False
 
         # print "Get CSV"
         try:
             csv_url_opened = urllib2.urlopen(the_url_string)
             cr = csv.reader(csv_url_opened)
-            self.activated = True
-            self.save()
+            # self.activated = True
+            # self.save()
         except:
             self.activated = False
             self.save()
@@ -356,7 +374,6 @@ class Company(models.Model):
         centi_count = 0
 
         # print "Daily"
-        daily_queryset = Daily.objects.filter(cid=self.id)
 
         for row in cr:
             count += 1
@@ -367,6 +384,10 @@ class Company(models.Model):
             if count % 1000 == 0:
                 centi_count += 1
                 print str(centi_count*1000)+" Entries reviewed!"   
+
+            if count > 500 and not self.activated:
+                self.activated = True
+                self.save()
 
             if only_try:
                 if count_actually_inserted > only_try:
@@ -541,7 +562,8 @@ class Company(models.Model):
                 self.activated = True
                 self.save()
                 
-            pool.add_task(self.make_daily_from_row, row)  
+            pool.add_task(self.make_daily_from_row, row) 
+            # self.make_daily_from_row(row)  ###
 
 
         if response:

@@ -417,12 +417,13 @@ def get_random_company(request):
 
 
 # @login_required
-def refresh_all_companies(request):
+def refresh_all_companies(request,only_do=100):
     """ """
-    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] 
+    summary_string = "Failure Occured."
+    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] , only_do
     if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
         obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
-        obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=200) ## ##
+        summary_string = obj_list.attempt_to_add_new_to_all(max_threads=50, quit_after_trying=only_do) ## ##
         connection.close()  
     else:
         pass
@@ -434,28 +435,24 @@ def refresh_all_companies(request):
 
     # connection.close()  
 
-    response = HttpResponseRedirect('/stock_track/')
+    response = HttpResponse("<P>"+str(summary_string)+"</P>\n\n")
 
     return response
     
 
-def build_new_company_dailies(request):
+def build_new_company_dailies(request,only_do=1):
     """ """
-    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] 
+    summary_string = "Failure Occured."
+    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] , int(only_do)
     if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
         obj_list = Company.objects.filter(not_traded=False,activated=False,has_averages=False)
-        obj_list.build_new_company_dailies(max_threads=100, only_do_this_many=5) ## 
+        # summary_string = obj_list.build_new_company_dailies(max_threads=50, only_do_this_many=int(only_do)) ## 
+        summary_string = obj_list.attempt_to_add_new_to_all(only_try=None,max_threads=50, quit_after_trying=only_do) ## ##
         connection.close()  
     else:
         pass
 
 
-    # obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
-
-    # obj_list.attempt_to_add_new_to_all(max_threads=100, quit_after_trying=200) ## 
-
-    # connection.close()  
-
-    response = HttpResponseRedirect('/stock_track/')
+    response = HttpResponse("<P>"+str(summary_string)+"</P>\n\n")
 
     return response

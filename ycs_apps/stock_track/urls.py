@@ -26,6 +26,9 @@ urlpatterns = patterns('',
     url(r'^random_company/$', views.get_random_company, name='random_company'),
     url(r'^refresh_all_companies/$', views.refresh_all_companies, name='refresh_all_companies'),
     url(r'^build_new_company_dailies/$', views.build_new_company_dailies, name='build_new_company_dailies'),
+    url(r'^refresh_all_companies/(?P<only_do>\d+)/$', views.refresh_all_companies, name='refresh_all_companies'),
+    url(r'^build_new_company_dailies/(?P<only_do>\d+)/$', views.build_new_company_dailies, name='build_new_company_dailies'),
+
 
     
     # url(r'^edit/(?P<slug>\w+)/$', views.UpdateView.as_view(), name='edit'),
