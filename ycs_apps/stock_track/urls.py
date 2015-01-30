@@ -28,6 +28,7 @@ urlpatterns = patterns('',
     url(r'^build_new_company_dailies/$', views.build_new_company_dailies, name='build_new_company_dailies'),
     url(r'^refresh_all_companies/(?P<only_do>\d+)/$', views.refresh_all_companies, name='refresh_all_companies'),
     url(r'^build_new_company_dailies/(?P<only_do>\d+)/$', views.build_new_company_dailies, name='build_new_company_dailies'),
+    url(r'^analyse_all_companies/$', views.analyse_all_companies, name='analyse_all_companies'),
 
 
     
@@ -35,7 +36,7 @@ urlpatterns = patterns('',
     # url(r'^farview/(?P<slug>\w+)/$', views.FARUpdateView.as_view(), name='farview'),
     # url(r'^note/(?P<slug>\w+)/$', views.NotesUpdateView.as_view(), name='note'),
     # url(r'^pdf/(?P<slug>\w+)/$', views.pdf_maker_view, name='pdf'),
-    url(r'^register/$', views.register, name='register'), # ADD NEW PATTERN!
+    url(r'^register/$', views.register, name='register'), # ADD NEW PATTERN! ##
     url(r'^login/$', views.user_login, name='login'),
     url(r'^logout/$', views.user_logout, name='logout'),
 

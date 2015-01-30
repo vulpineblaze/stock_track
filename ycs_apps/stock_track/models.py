@@ -12,6 +12,8 @@ import csv
 import urllib2
 import StringIO
 
+from time import sleep
+
 import numpy as np
 
 from random import randint
@@ -219,7 +221,7 @@ class CompanyQuerySet(models.query.QuerySet):
         #     #~ threads = thread_joiner(threads)
         #     enumerate_joiner(threading.currentThread())
                 
-            pool.add_task(company.add_dailies_to_company, (only_try,quit_after_trying))   
+            pool.add_task(company.add_dailies_to_company, only_try)   
             # threads.append(
             #     threading.Thread(
             #         name='daily_insert_'+str(count), 
@@ -297,6 +299,46 @@ class CompanyQuerySet(models.query.QuerySet):
         print summary_string
         return summary_string
 
+    def analyse_all_companies(self, max_threads=4, loud=False, do_once=True):
+        """ """
+        
+        pool = ThreadPool(max_threads)       
+
+        
+        start_time = datetime.now()
+        temp_time = start_time - timedelta(minutes=2)
+        now_ish = datetime.today()
+        # future_year = now_ish.year+1
+        
+
+        divisor = (self.count()*1.0)
+        
+        count = 0
+        
+        for company in self:
+            count += 1
+                
+            if ((datetime.now() - temp_time).seconds) > 90 :
+                temp_time = datetime.now()
+                print "Accomplished "+str((1.0*count/divisor)*100)+"% in "+str((temp_time - start_time).seconds)+" seconds."
+                
+            pool.add_task(company.analyse_and_put_in_db, loud, do_once)   
+
+        pool.wait_completion()
+
+        reset_database_connection()
+
+        end_time = (datetime.now() - start_time)
+
+        summary_string = "Final time was " + str(end_time.seconds//3600)+" hours, "
+        summary_string += str(end_time.seconds//60%60)
+        summary_string += " minutes, and " + str(end_time.seconds%60) + " seconds."
+
+        left_obj_list = self.filter()
+        summary_string += "\nTotal went from "+str(divisor)+" to "+str(left_obj_list.count())+" companies."
+        print summary_string
+        return summary_string
+
 
 class CompanyManager(models.Manager):
     '''Use this class to define methods just on Entry.objects.'''
@@ -342,20 +384,20 @@ class Company(models.Model):
         if self.not_traded:
             return False
 
-        if not self.find_acceptable_ticker():
-            self.not_traded = True
-            self.activated = False
-            self.save()
-            return False
+        # if not self.find_acceptable_ticker():
+        #     self.not_traded = True
+        #     self.activated = False
+        #     self.save()
+        #     return False
 
         daily_queryset = Daily.objects.filter(cid=self.id)
         
-        if self.activated:
-            return False
-        elif daily_queryset.count() > DAILIES_TO_BECOME_ACTIVE: 
-            self.activated = True
-            self.save()
-            return False
+        # if self.activated:
+        #     return False
+        # if daily_queryset.count() > DAILIES_TO_BECOME_ACTIVE: 
+        #     self.activated = True
+        #     self.save()
+            # return False
 
         # print "Get CSV"
         try:
@@ -435,7 +477,7 @@ class Company(models.Model):
         # print "Add Dailies Finished for "+str(self.ticker)
         return
 
-    def analyse_and_put_in_db(self):
+    def analyse_and_put_in_db(self,loud=True, do_once=True):
         """ """                 
         #~ print row, company
         #~ row_date = datetime.strptime(str(row[0]) , '%Y-%m-%d')#'%b %d %Y %I:%M%p') #row[0],
@@ -444,15 +486,17 @@ class Company(models.Model):
         #~ row_price_low = float(row[3])
         #~ row_price_close = float(row[4])
         #~ row_price_volume = float(row[5])
-        #~ row_price_adj_close = float(row[6])
-        print "Start Analysis"
+        #~ row_price_adj_close = float(row[6]) ##
+        if loud:
+            print "Start Analysis"
         price_list = []
         volume_list = []
         do_for_count = 10
         
-        if self.modified:
+        if self.modified and do_once:
             if self.modified.date() == datetime.now(pytz.utc).date():
-                print "This record was edited today!"
+                if loud:
+                    print "This record was edited today!"
                 return 
                 # pass
 
@@ -466,7 +510,15 @@ class Company(models.Model):
             volume_list.append(daily.price_volume)
 
         #~ price_array = array( price_list )
-        print "Dailies Loading into Arrays"
+        if loud:
+            print "Dailies Loading into Arrays"
+
+        if len(price_list) < 1 or len(volume_list) < 1:
+            self.has_averages = False 
+            self.modified = timezone.now()
+            self.save()
+            return
+
 
         if (
                 len(price_list) > 100 and 
@@ -479,6 +531,7 @@ class Company(models.Model):
         else:
             self.has_averages = False 
              
+
         self.score_undervalue = calc_score_undervalue(price_list)  
         self.price_average = np.average(price_list)    
         self.price_stdev = np.std(price_list) 
@@ -489,7 +542,8 @@ class Company(models.Model):
 
         self.save()
         connection.close()
-        print "Analysis Finished"
+        if loud:
+            print "Analysis Finished"
 
     def build_ticker_data_from_web(self, max_threads=4): # self = company
         """    """
@@ -604,13 +658,19 @@ class Company(models.Model):
 
 
 
-    def find_acceptable_ticker(self):
+    def find_acceptable_ticker(self,recursion=0):
+        if recursion > 20:
+            return False
+
         ticker_string = str(self.ticker)
         found_ticker = False
-        reject_string = "This is an unknown symbol."
+        reject_string = "This is an unknown symbol." ##
+        # reject_string = "title=\"Yahoo Finance Search results for "
 
         site= "http://www.nasdaq.com/symbol/"+ticker_string
-        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+        # site= "http://finance.yahoo.com/q?uhb=uh3_finance_vert&fr=&type=2button&s="+ticker_string
+        # hdr = {'User-Agent': 'Customer User-Agent'}
+        hdr = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11 Custom-User-Agent',
                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
                'Accept-Encoding': 'none',
@@ -623,8 +683,12 @@ class Company(models.Model):
             page = urllib2.urlopen(req)
             content = page.read()
         except urllib2.HTTPError, e:
-            print e.fp.read(), "<< Read Error"
-            content = None
+            error_msg = e.fp.read()
+            print error_msg, "<< Read Error"
+            content = page = None
+            if "ACCESS DENIED" in error_msg:
+                sleep(0.05) 
+                found_ticker = self.find_acceptable_ticker(recursion+1)
 
         if content:
             if reject_string in content:

@@ -423,7 +423,7 @@ def refresh_all_companies(request,only_do=100):
     print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] , only_do
     if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
         obj_list = Company.objects.filter(activated=True,not_traded=False).order_by('?')
-        summary_string = obj_list.attempt_to_add_new_to_all(max_threads=50, quit_after_trying=only_do) ## ##
+        summary_string = obj_list.attempt_to_add_new_to_all(max_threads=50, quit_after_trying=int(only_do)) ## ##
         connection.close()  
     else:
         pass
@@ -446,8 +446,36 @@ def build_new_company_dailies(request,only_do=1):
     print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] , int(only_do)
     if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
         obj_list = Company.objects.filter(not_traded=False,activated=False,has_averages=False)
-        # summary_string = obj_list.build_new_company_dailies(max_threads=50, only_do_this_many=int(only_do)) ## 
-        summary_string = obj_list.attempt_to_add_new_to_all(only_try=None,max_threads=50, quit_after_trying=only_do) ## ##
+        summary_string = obj_list.build_new_company_dailies(max_threads=50, only_do_this_many=int(only_do))  
+        # summary_string = obj_list.attempt_to_add_new_to_all(only_try=None,max_threads=50, quit_after_trying=only_do) ## ##
+        connection.close()  
+    else:
+        pass
+
+
+    response = HttpResponse("<P>"+str(summary_string)+"</P>\n\n")
+
+    return response
+
+
+def analyse_all_companies(request,only_do=1):
+    """ """
+    summary_string = "Failure Occured."
+    loud = False
+    do_once = True
+
+    print request.META['QUERY_STRING'], "id=cURL9001" in request.META['QUERY_STRING'] , int(only_do)
+
+    if "verbose" in request.META['QUERY_STRING']:
+        loud = True
+    if "again" in request.META['QUERY_STRING']:
+        do_once = False 
+
+    if request.user.is_authenticated() or "id=cURL9001" in request.META['QUERY_STRING'] :
+        obj_list = Company.objects.all()
+        # summary_string = " Auth works, at least.."
+        summary_string = obj_list.analyse_all_companies(max_threads=50, loud=loud, do_once=do_once)  
+        # summary_string = obj_list.attempt_to_add_new_to_all(only_try=None,max_threads=50, quit_after_trying=only_do) ## ##
         connection.close()  
     else:
         pass
