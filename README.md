@@ -1,12 +1,5 @@
-##Stock Track##
-This project is a proof-of-concept to do some big-data number crunching using only a t1.tiny AWS instance.
-So far, in this regard, the project is successful. Having scarce resources have forced innovations that have improved the data mining algorithms preciseness by whole orders of magnitude.
-###Monetization###
-I may attempt to monetize this project. (C) All Rights Reserved 2015.
-
-
-# Project Name
-> Here goes your awesome project description!
+# Stock Track
+> This project is a proof-of-concept to do some big-data number crunching using only a t1.tiny AWS instance.
 
 ## Table of contents
 * [General info](#general-info)
@@ -21,48 +14,50 @@ I may attempt to monetize this project. (C) All Rights Reserved 2015.
 * [Contact](#contact)
 
 ## General info
-Add more general information about project. What the purpose of the project is? Motivation?
-Put possible docs / coda link here.
+The project was successful in that the ti.tiny AWS EC2 instance could properly handle large datasets and correct execute desired algorithms. Having scarce resources have forced innovations that have improved the data mining algorithms preciseness by whole orders of magnitude.
+
 
 ## Screenshots
 ![Example screenshot](./img/screenshot.png)
 
 ## Technologies
-* Tech 1 - version 1.0
+* Python - version 2.7
+* Django
+* nginx
+* gunicorn
+* MySQL
 * Tech 2 - version 2.0
 * Tech 3 - version 3.0
 
 ## Setup
-Describe how to install / setup your local environement / add link to demo version.
+Outlined in [install_instructions](./install_instructions)
 
 ### Requirements
-If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+Outlined in [requirements.txt](./requirements.txt)
 
 ### Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Code Examples
-Show examples of usage:
-`put-your-code-here`
+Scripts hold various data collection and scraping functions, while web API calls via cron updated data and performed analytics to display to User via web interface.
 
 ## Features
 List of features ready and TODOs for future development
-* Awesome feature 1
-* Awesome feature 2
-* Awesome feature 3
+* Takes in internet stock data and store it
+* Updates with new stock data
+* Performs analyutics on data and memoize results
+* Provides web API interface and Google Charts API for User
 
 To-do list:
-* Wow improvement to be done 1
-* Wow improvement to be done 2
+* Refine analytics algorithm
 
 ## Status
-Project is: _in progress_, _finished_, _no longer continue_ and why?
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+Project is: _no longer continue_, due to older technologies it uses.
 
 ## Inspiration
-Add here credits. Project inspired by..., based on...
+Discussion on "solving" the stock market with a fellow CSUS student lead to this project. The results were accurate, but the answer was not as promising as hoped. 
 
 ## Contact
 Created by [@vulpineblaze](https://github.com/vulpineblaze) - feel free to contact me!
+
+
+
+### Monetization
+I may attempt to monetize this project. (C) All Rights Reserved 2015.
